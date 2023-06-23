@@ -1,3 +1,4 @@
+import re
 from dataclasses import dataclass
 from enum import Enum
 
@@ -77,12 +78,72 @@ class QueryParser:
         }]
         """
         self.check_query()
-        return self.query
+
+        # Extract nodes
+        pattern = r"{(.*?)}"
+        match = re.search(pattern, self.query)
+        if match:
+            nodes = match.group(1).split(",")
+            nodes = [int(id.strip()) for id in nodes]
+        else:
+            raise Exception("Nodes not found")
+
+        # Extract query component
+        pattern = r"SELECT\s+(.*?)\s+FROM"
+        match = re.search(pattern, self.query)
+        if match:
+            query = match.group(1).strip()
+        else:
+            raise Exception("Query not found")
+        
+        # Extract inputs (subscription event types)
+        pattern = r"FROM\s+(.*?)\s+ON"
+
+        match = re.search(pattern, self.query)
+        if match:
+            substring = match.group(1)
+            inputs = self.split_ignore_parentheses(substring, ",") #split on every comma that is not enclosed in brakets
+            inputs = [elem.strip() for elem in inputs] #strip emty characters from results
+        else:
+            raise Exception("Inputs not found")
+        
+        result = {
+            "nodes": nodes,
+            "query": query,
+            "inputs": inputs
+        }
+        return result
 
     def check_query(self):
         if self.query == "":
             raise Exception("Query is empty")
+        
+    @staticmethod
+    def split_ignore_parentheses(string, delimiter):
+        """
+        Split a String on every delimiter that is not enclosed in brakets
+        """
+        result = []
+        stack = []
+        current = ""
+        for char in string:
+            if char == delimiter and not stack:
+                result.append(current.strip())
+                current = ""
+            else:
+                current += char
+                if char == "(":
+                    stack.append("(")
+                elif char == ")":
+                    if stack:
+                        stack.pop()
+        result.append(current.strip())
+        return result        
+            
+
 
 
 if __name__ == "__main__":
-    print("Hello World")
+    parser = QueryParser('SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}');
+    print(parser.parse());
+
