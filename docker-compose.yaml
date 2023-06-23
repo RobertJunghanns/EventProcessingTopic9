@@ -5,7 +5,4 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
-    # command: python3 ./peer.py
-    # environment:
-    #   - ECHO_PORT=8888
-    #   - PEER_HOSTNAMES=clienttwo
+    command: python evaluation_plan.py
