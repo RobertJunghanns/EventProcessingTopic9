@@ -1,6 +1,15 @@
 import pytest
+import stomp
 
-from evaluation_plan import AtomicEventType, Operator, Query, StatementParser
+from connection import ActiveMQNode, ExceptionListener, LogListener
+from evaluation_plan import (
+    AtomicEventType,
+    Node,
+    Operator,
+    Query,
+    Statement,
+    StatementParser,
+)
 
 
 @pytest.mark.parametrize(
@@ -93,22 +102,22 @@ def test_statement_parser():
     statement = "SELECT SEQ(J, A) FROM J, A ON {4}"
     parsed = StatementParser(statement).parse()
 
-    assert parsed == {
-        "nodes": [4],
-        "query": Query(
+    assert parsed == Statement(
+        nodes=[Node.FOUR],
+        query=Query(
             operator=Operator.SEQ, operands=[AtomicEventType.J, AtomicEventType.A]
         ),
-        "inputs": [AtomicEventType.J, AtomicEventType.A],
-    }
+        inputs=[AtomicEventType.J, AtomicEventType.A],
+    )
 
 
 def test_statement_parser_two():
     statement = "SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {5, 9}"
     parsed = StatementParser(statement).parse()
 
-    assert parsed == {
-        "nodes": [5, 9],
-        "query": Query(
+    assert parsed == Statement(
+        nodes=[Node.FIVE, Node.NINE],
+        query=Query(
             operator=Operator.AND,
             operands=[
                 AtomicEventType.E,
@@ -118,10 +127,53 @@ def test_statement_parser_two():
                 ),
             ],
         ),
-        "inputs": [
+        inputs=[
             AtomicEventType.E,
             Query(
                 operator=Operator.SEQ, operands=[AtomicEventType.J, AtomicEventType.A]
             ),
         ],
-    }
+    )
+
+
+def test_connection():
+    # smoke test
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+    conn.set_listener("", LogListener())
+
+    conn.connect("admin", "admin", wait=True)
+    conn.disconnect()
+
+
+def test_activemq_with_statement():
+    """
+    This test doesn't seem to work yet, but it's a start.
+    I monitored the ActiveMQ broker on the console and I can see the messages
+    being sent on the topic, but the ExceptionListener is not being called on
+    the subscriber side. I'm not sure why yet...
+    """
+
+    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+    conn.set_listener("", LogListener())
+    conn.connect("admin", "admin", wait=True)
+
+    # Set up subscription to query topic
+    conn.subscribe(
+        destination="/topic/ba1c8dd36be209285e64c7bb1e41d817",  # hash of the query.topic
+        id="ba1c8dd36be209285e64c7bb1e41d817_5",
+        ack="auto",
+    )
+
+    statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}"
+
+    parser = StatementParser(statement=statement)
+    statement = parser.parse()
+
+    for node in statement.nodes:
+        amq_node = ActiveMQNode(
+            connection=conn,
+            id_=node.value,
+            query_topic=statement.query.topic,
+            input_topics=statement.inputs_topics,
+        )
+        amq_node.send(f"TEST from {amq_node.id}")

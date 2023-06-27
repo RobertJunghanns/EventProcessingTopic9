@@ -1,5 +1,5 @@
+import hashlib
 import re
-
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any
@@ -50,13 +50,25 @@ class Node(Enum):
 
 
 @dataclass
+class Statement:
+    nodes: list[Node]
+    query: "Query"
+    inputs: "list[AtomicEventType | Query]"
+
+    @property
+    def inputs_topics(self) -> list[str]:
+        return [input_.topic for input_ in self.inputs]
+
+
+@dataclass
 class Query:
     operator: Operator
     operands: "list[AtomicEventType | Query]"
 
     @property
-    def topic(self):
-        return str(hash(str(self)))
+    def topic(self) -> str:
+        hash_md5 = hashlib.md5(str(self).encode("UTF-8"))
+        return hash_md5.hexdigest().strip()
 
     @classmethod
     def from_string(cls, text: str) -> "Query":
@@ -97,7 +109,7 @@ class Query:
         return cls(operator, operands)
 
     @staticmethod
-    def match_operator(text):
+    def match_operator(text) -> "re.Match | None":
         valid_operators = "|".join([operator.value for operator in Operator])
         return re.match(rf"({valid_operators})\((.*)\)", text)
 
@@ -177,7 +189,7 @@ class Query:
 class StatementParser:
     statement: str
 
-    def parse(self):
+    def parse(self) -> Statement:
         """
         Parse a statement from the Distributed Evaluation Plan:
 
@@ -191,37 +203,35 @@ class StatementParser:
         Example 1
 
         query: SELECT SEQ(J, A) FROM J, A ON {4}
-        returns: {
-            "nodes" = [Node.FOUR]
-            "query": Query(
-                        operator=Operator.SEQ
-                        operands=[AtomicEventType.J, AtomicEventType.A]
-                    )
-            "inputs": [AtomicEventType.J, AtomicEventType.A]
-        }
+        returns:  Statement(
+                    nodes=[Node.FOUR],
+                    query=Query(
+                        operator=Operator.SEQ, operands=[AtomicEventType.J, AtomicEventType.A]
+                    ),
+                    inputs=[AtomicEventType.J, AtomicEventType.A]
+                )
 
         Example 2
         query: SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}
-        returns: {
-            "nodes" = [Node.NINE]
-            "query": Query(
-                        operator=Operator.AND
+        returns: Statement(
+                    nodes=[Node.FIVE, Node.NINE],
+                    query=Query(
+                        operator=Operator.AND,
                         operands=[
                             AtomicEventType.E,
                             Query(
-                                operator=Operator.SEQ
-                                operands=[AtomicEventType.J, AtomicEventType.A]
-                            )
-                        ]
-                    )
-            "inputs": [
-                AtomicEventType.E,
-                Query(
-                    operator=Operator.SEQ
-                    operands=[AtomicEventType.J, AtomicEventType.A]
+                                operator=Operator.SEQ,
+                                operands=[AtomicEventType.J, AtomicEventType.A],
+                            ),
+                        ],
+                    ),
+                    inputs=[
+                        AtomicEventType.E,
+                        Query(
+                            operator=Operator.SEQ, operands=[AtomicEventType.J, AtomicEventType.A]
+                        ),
+                    ],
                 )
-            ]
-        }
 
         """
         regex = r"SELECT (.*) FROM (.*) ON {(.*)}"
@@ -232,6 +242,6 @@ class StatementParser:
 
         query = Query.from_string(match.group(1))
         inputs = Query.parse_operands(match.group(2))
-        nodes = [int(node) for node in match.group(3).split(",")]
+        nodes = [Node(int(node)) for node in match.group(3).split(",")]
 
-        return {"nodes": nodes, "query": query, "inputs": inputs}
+        return Statement(query=query, inputs=inputs, nodes=nodes)

@@ -1,42 +1,41 @@
-import time 
-import sys
 import stomp
 
-class Listener(stomp.ConnectionListener):
+
+class LogListener(stomp.ConnectionListener):
     def on_error(self, headers, message):
         print('received an error "%s"' % message)
+
     def on_message(self, headers, message):
         print('received a message "%s"' % message)
 
-class activeMqNode:
-    def __init__(self, hostPort, id, queryTopic, inputTopics): 
-        hosts = [('localhost', hostPort)] 
-        conn = stomp.Connection(host_and_ports=hosts)
-        conn.set_listener(id, Listener())
-        #conn.start()
-        conn.connect('admin', 'admin', wait=True)
 
-        for topic in inputTopics:
-            conn.subscribe(destination='/topic/'+topic, id = queryTopic+"_"+id, ack='auto') 
+class ExceptionListener(stomp.ConnectionListener):
+    def on_error(self, headers, message):
+        raise Exception('received an error "%s"' % message)
 
-        self.conn = conn
-        self.id = id
-        self.queryTopic = queryTopic
-        self.inputTopics = inputTopics
-    
+    def on_message(self, headers, message):
+        raise Exception('received a message "%s"' % message)
+
+
+class ActiveMQNode:
+    def __init__(self, connection, id_, query_topic, input_topics):
+        self.conn = connection
+        self.id = id_
+        self.query_topic = query_topic
+        self.input_topics = input_topics
+
+        for topic in input_topics:
+            self.conn.subscribe(
+                destination=f"/topic/{topic}",
+                id=f"{topic}_{id_}",
+                ack="auto",
+            )
+
     def send(self, message):
-        self.conn.send(body=message, destination='/topic/'+self.queryTopic)
-    
+        self.conn.send(body=message, destination=f"/topic/{self.query_topic}")
+
     def disconnect(self):
         self.conn.disconnect()
 
     def __str__(self):
-        return f"Connection(conn={self.conn}, id='{self.id}', queryTopic='{self.queryTopic}', inputTopics={self.inputTopics})"
-    
-
-
-    
-    
-    
-
-    
+        return f"Connection(conn={self.conn}, id='{self.id}', query_topic='{self.query_topic}', input_topics={self.input_topics})"

@@ -4,7 +4,14 @@
 
 - Docker
 - pytest
+- activeMQ (https://activemq.apache.org/getting-started)
 
-## Run the App - Currently this is the Testsuite
+Start the activeMQ broker with `activemq start` (daemon) or `activemq console`
 
-`make test` or `docker-compose up --build`
+## Run the App
+
+`docker-compose up --build`
+
+## Tests
+
+`make test`
