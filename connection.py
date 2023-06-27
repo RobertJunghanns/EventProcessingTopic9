@@ -17,7 +17,7 @@ class activeMqNode:
         conn.connect('admin', 'admin', wait=True)
 
         for topic in inputTopics:
-            conn.subscribe(destination='/topic/'+topic, ack='auto') 
+            conn.subscribe(destination='/topic/'+topic, id = queryTopic+"_"+id, ack='auto') 
 
         self.conn = conn
         self.id = id

@@ -18,8 +18,7 @@ if __name__ == "__main__":
     4. SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
     5. SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}
     6. SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
-    
-    hostPort = '8161'
+    hostPort = '61613' #Robert: 61613
 
     activeMqNodes = []
 
@@ -32,17 +31,20 @@ if __name__ == "__main__":
         activeMqNodes.append(activeMqNode)
 
     activeMqNodes[0].send('TEST')
-    """ 
-    parser = QueryParser('SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}');
-    print(parser.parse())
+    """
 
-    # THIS FOR SOME REASON THROWS A stomp.exception.ConnectFailedException
-    hosts = [('localhost', 61616)] 
+    #THIS WORKS FOR ME AFTER ADJUSTING THE 
+    #cd /usr/local/Cellar/activemq/<version>/libexec/conf 
+    #WITH 
+    #<transportConnector name="stomp" uri="stomp://localhost:61613"/>
+
+    hosts = [('localhost', 61613)] 
     conn = stomp.Connection(host_and_ports=hosts)
     conn.set_listener('', Listener())
     conn.connect('admin', 'admin', wait=True)
     # Register a subscriber with ActiveMQ. This tells ActiveMQ to send
     # all messages received on the topic 'topic-1' to this listener
-    conn.subscribe(destination='/topic/topic-1', ack='auto') 
+    conn.subscribe(destination='/topic/topic-1', id='test', ack='auto') 
     # Act as a message publisher and send a message the queue queue-1
     conn.disconnect()
+    
