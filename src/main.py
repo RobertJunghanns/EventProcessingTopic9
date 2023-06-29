@@ -1,6 +1,7 @@
 import stomp
+import time
 
-from connection import ActiveMQNode, LogListener
+from connection import ActiveMQNode, LogListener, make_connection
 from evaluation_plan import StatementParser
 
 if __name__ == "__main__":
@@ -15,18 +16,6 @@ if __name__ == "__main__":
     6. SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
 
     hostPort = '61613' # Robert: 61613
-
-    activeMqNodes = []
-
-    # Create Nodes for first Statement
-    parser = QueryParser('SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}');
-    parsedDict = parser.parse()
-
-    for nodeId in parsedDict['nodes']:
-        activeMqNode = activeMqNode(hostPort, nodeId, parsedDict['query'], parsedDict['inputs'])
-        activeMqNodes.append(activeMqNode)
-
-    activeMqNodes[0].send('TEST')
     """
 
     # TODO Make this work with Ubuntu in Docker!
@@ -38,19 +27,20 @@ if __name__ == "__main__":
     #
     # @Max worked for me out of the box
 
-    def make_connection(listener=LogListener()):
-        hosts = [("localhost", 61613)]
-        conn = stomp.Connection(host_and_ports=hosts)
-        conn.set_listener("", listener)
-        conn.connect("admin", "admin", wait=True)
-        return conn
-
     # Register a subscriber with ActiveMQ. This tells ActiveMQ to send
     # all messages received on the topic 'topic-1' to this listener
     # conn.subscribe(destination="/topic/topic-1", id="test", ack="auto")
     #
     # Act as a message publisher and send a message the queue queue-1
     # conn.disconnect()
+
+    # Set up subscription to query topic
+    subscriber_conn = make_connection();
+    subscriber_conn.subscribe(
+        destination="/topic/ba1c8dd36be209285e64c7bb1e41d817",  # hash of the query.topic
+        id="ba1c8dd36be209285e64c7bb1e41d817_5",
+        ack="auto",
+    )
 
     statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}"
 
@@ -67,3 +57,4 @@ if __name__ == "__main__":
             input_topics=statement.inputs_topics,
         )
         amq_node.send(f"TEST from {amq_node.id}")
+        time.sleep(0.1)

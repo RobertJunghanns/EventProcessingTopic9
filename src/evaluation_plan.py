@@ -7,7 +7,7 @@ from typing import Any
 
 class ValueEnum(Enum):
     @classmethod
-    def values(cls) -> list[str]:
+    def values(cls) -> 'list[str]':
         return [enum.value for enum in cls]
 
     @classmethod
@@ -51,12 +51,12 @@ class Node(Enum):
 
 @dataclass
 class Statement:
-    nodes: list[Node]
+    nodes: 'list[Node]'
     query: "Query"
     inputs: "list[AtomicEventType | Query]"
 
     @property
-    def inputs_topics(self) -> list[str]:
+    def inputs_topics(self) -> 'list[str]':
         return [input_.topic for input_ in self.inputs]
 
 
@@ -120,7 +120,7 @@ class Query:
         ]
 
     @staticmethod
-    def split_operands(operands: str) -> list[str]:
+    def split_operands(operands: str) -> 'list[str]':
         """
         Split operands into a list of strings, one level deep.
 

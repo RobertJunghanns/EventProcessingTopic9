@@ -2,7 +2,7 @@ import pytest
 import stomp
 import time
 
-from connection import ActiveMQNode, ExceptionListener, LogListener
+from connection import ActiveMQNode, ExceptionListener, LogListener, make_connection
 from evaluation_plan import (
     AtomicEventType,
     Node,
@@ -171,10 +171,7 @@ def test_activemq_with_statement(capsys):
     statement = parser.parse()
 
     for node in statement.nodes:
-        node_conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
-        node_conn.set_listener("", LogListener())
-        node_conn.connect("admin", "admin", wait=True)
-
+        node_conn = make_connection()
         amq_node = ActiveMQNode(
             connection=node_conn,
             id_=node.value,
@@ -183,6 +180,6 @@ def test_activemq_with_statement(capsys):
         )
         amq_node.send(f"TEST from {amq_node.id}")
 
-        time.sleep(0.05)
+        time.sleep(0.1)
         captured = capsys.readouterr()
         assert f"TEST from {amq_node.id}" in captured.out

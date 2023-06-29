@@ -1,6 +1,5 @@
 import stomp
 
-
 class LogListener(stomp.ConnectionListener):
     def on_error(self, message):
         print('received an error "%s"' % message)
@@ -15,8 +14,7 @@ class ExceptionListener(stomp.ConnectionListener):
 
     def on_message(self, message):
         raise Exception('received a message "%s"' % message)
-
-
+    
 class ActiveMQNode:
     def __init__(self, connection, id_, query_topic, input_topics):
         self.conn = connection
@@ -39,3 +37,10 @@ class ActiveMQNode:
 
     def __str__(self):
         return f"Connection(conn={self.conn}, id='{self.id}', query_topic='{self.query_topic}', input_topics={self.input_topics})"
+
+def make_connection(listener=LogListener()):
+        hosts = [("localhost", 61613)]
+        conn = stomp.Connection(host_and_ports=hosts)
+        conn.set_listener("", listener)
+        conn.connect("admin", "admin", wait=True)
+        return conn
