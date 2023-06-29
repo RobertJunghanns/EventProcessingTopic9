@@ -1,5 +1,6 @@
 import pytest
 import stomp
+import time
 
 from connection import ActiveMQNode, ExceptionListener, LogListener
 from evaluation_plan import (
@@ -145,7 +146,7 @@ def test_connection():
     conn.disconnect()
 
 
-def test_activemq_with_statement():
+def test_activemq_with_statement(capsys):
     """
     This test doesn't seem to work yet, but it's a start.
     I monitored the ActiveMQ broker on the console and I can see the messages
@@ -170,10 +171,18 @@ def test_activemq_with_statement():
     statement = parser.parse()
 
     for node in statement.nodes:
+        node_conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
+        node_conn.set_listener("", LogListener())
+        node_conn.connect("admin", "admin", wait=True)
+
         amq_node = ActiveMQNode(
-            connection=conn,
+            connection=node_conn,
             id_=node.value,
             query_topic=statement.query.topic,
             input_topics=statement.inputs_topics,
         )
         amq_node.send(f"TEST from {amq_node.id}")
+
+        time.sleep(0.05)
+        captured = capsys.readouterr()
+        assert f"TEST from {amq_node.id}" in captured.out

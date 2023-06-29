@@ -38,11 +38,12 @@ if __name__ == "__main__":
     #
     # @Max worked for me out of the box
 
-    hosts = [("localhost", 61613)]
-
-    conn = stomp.Connection(host_and_ports=hosts)
-    conn.set_listener("", LogListener())
-    conn.connect("admin", "admin", wait=True)
+    def make_connection(listener=LogListener()):
+        hosts = [("localhost", 61613)]
+        conn = stomp.Connection(host_and_ports=hosts)
+        conn.set_listener("", listener)
+        conn.connect("admin", "admin", wait=True)
+        return conn
 
     # Register a subscriber with ActiveMQ. This tells ActiveMQ to send
     # all messages received on the topic 'topic-1' to this listener
@@ -60,7 +61,7 @@ if __name__ == "__main__":
 
     for node in statement.nodes:
         amq_node = ActiveMQNode(
-            connection=conn,
+            connection=make_connection(),
             id_=node.value,
             query_topic=statement.query.topic,
             input_topics=statement.inputs_topics,

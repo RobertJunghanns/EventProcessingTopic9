@@ -2,18 +2,18 @@ import stomp
 
 
 class LogListener(stomp.ConnectionListener):
-    def on_error(self, headers, message):
+    def on_error(self, message):
         print('received an error "%s"' % message)
 
-    def on_message(self, headers, message):
+    def on_message(self, message):
         print('received a message "%s"' % message)
 
 
 class ExceptionListener(stomp.ConnectionListener):
-    def on_error(self, headers, message):
+    def on_error(self, message):
         raise Exception('received an error "%s"' % message)
 
-    def on_message(self, headers, message):
+    def on_message(self, message):
         raise Exception('received a message "%s"' % message)
 
 
