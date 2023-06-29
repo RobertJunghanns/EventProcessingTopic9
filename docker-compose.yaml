@@ -1,11 +1,7 @@
 version: "3.8"
-
 services:
   main:
     build:
       context: .
       dockerfile: ./Dockerfile
-    # command: python3 ./peer.py
-    # environment:
-    #   - ECHO_PORT=8888
-    #   - PEER_HOSTNAMES=clienttwo
+    command: python main.py
