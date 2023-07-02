@@ -2,13 +2,11 @@ import stomp
 import time
 
 from connection import ActiveMQNode, LogListener, make_connection
-from evaluation_plan import StatementParser
-from eventIntervalGenerator import EventIntervaldGenerator
+from evaluation_plan import StatementParser, AtomicEventType
+from atomicEventProducer import AtomicEventProducer
+
 
 if __name__ == "__main__":
-
-    eventIntervalGenerator = EventIntervaldGenerator()
-    eventIntervalGenerator.generate_random_event_intervals(600000, 500, 30000, 'eventIntervals.csv')
     """
     Distributed Evaluation Plan
 
@@ -39,7 +37,7 @@ if __name__ == "__main__":
     # conn.disconnect()
 
     # Set up subscription to query topic
-    subscriber_conn = make_connection();
+    subscriber_conn = make_connection()
     subscriber_conn.subscribe(
         destination="/topic/ba1c8dd36be209285e64c7bb1e41d817",  # hash of the query.topic
         id="ba1c8dd36be209285e64c7bb1e41d817_5",
@@ -62,3 +60,12 @@ if __name__ == "__main__":
         )
         amq_node.send(f"TEST from {amq_node.id}")
         time.sleep(0.1)
+
+    print('creating atomic eventProducers...')
+    a_event_producer = AtomicEventProducer(AtomicEventType.A, AtomicEventProducer.fileNameAEvents)
+    b_event_producer = AtomicEventProducer(AtomicEventType.B, AtomicEventProducer.fileNameBEvents)
+    c_event_producer = AtomicEventProducer(AtomicEventType.C, AtomicEventProducer.fileNameCEvents)
+    d_event_producer = AtomicEventProducer(AtomicEventType.D, AtomicEventProducer.fileNameDEvents)
+    e_event_producer = AtomicEventProducer(AtomicEventType.E, AtomicEventProducer.fileNameEEvents)
+    f_event_producer = AtomicEventProducer(AtomicEventType.F, AtomicEventProducer.fileNameFEvents)
+    j_event_producer = AtomicEventProducer(AtomicEventType.J, AtomicEventProducer.fileNameJEvents)
