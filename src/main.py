@@ -3,8 +3,12 @@ import time
 
 from connection import ActiveMQNode, LogListener, make_connection
 from evaluation_plan import StatementParser
+from eventIntervalGenerator import EventIntervaldGenerator
 
 if __name__ == "__main__":
+
+    eventIntervalGenerator = EventIntervaldGenerator()
+    eventIntervalGenerator.generate_random_event_intervals(600000, 500, 30000, 'eventIntervals.csv')
     """
     Distributed Evaluation Plan
 
