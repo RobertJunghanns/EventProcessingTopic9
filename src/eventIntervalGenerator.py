@@ -34,6 +34,7 @@ class EventIntervaldGenerator:
 
 
     def write_to_file(self, eventIntervals, filename):
+        print(eventIntervals)
         with open(filename, 'w') as f:
             writer = csv.writer(f)
             writer.writerow(eventIntervals)
