@@ -1,6 +1,8 @@
+import time
+from multiprocessing import Queue
+
 import pytest
 import stomp
-import time
 
 from connection import ActiveMQNode, ExceptionListener, LogListener, make_connection
 from evaluation_plan import (
@@ -154,32 +156,30 @@ def test_activemq_with_statement(capsys):
     the subscriber side. I'm not sure why yet...
     """
 
-    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
-    conn.set_listener("", LogListener())
-    conn.connect("admin", "admin", wait=True)
-
-    # Set up subscription to query topic
-    conn.subscribe(
-        destination="/topic/ba1c8dd36be209285e64c7bb1e41d817",  # hash of the query.topic
-        id="ba1c8dd36be209285e64c7bb1e41d817_5",
-        ack="auto",
-    )
-
     statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}"
-
     parser = StatementParser(statement=statement)
     statement = parser.parse()
 
-    for node in statement.nodes:
-        node_conn = make_connection()
-        amq_node = ActiveMQNode(
-            connection=node_conn,
-            id_=node.value,
-            query_topic=statement.query.topic,
-            input_topics=statement.inputs_topics,
-        )
-        amq_node.send(f"TEST from {amq_node.id}")
+    # Set up subscription to query topic
+    conn = make_connection()
+    conn.subscribe(
+        destination=f"/topic/{statement.query.topic}",  # hash of the query.topic
+        id=f"test-sub-{statement.query.topic}",
+        ack="auto",
+    )
 
-        time.sleep(0.1)
-        captured = capsys.readouterr()
-        assert f"TEST from {amq_node.id}" in captured.out
+    for node in statement.nodes:
+        amq_node = ActiveMQNode(
+            id_=node.value,
+            queue=Queue(),
+            connection=make_connection(),
+            statements=[statement],
+        )
+        amq_node.send(
+            f"TEST from {amq_node.id}", topic=f"/topic/{statement.query.topic}"
+        )
+
+    time.sleep(0.01)
+    captured = capsys.readouterr().out
+    assert "TEST from 5" in captured
+    assert "TEST from 9" in captured

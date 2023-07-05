@@ -1,10 +1,10 @@
-import stomp
 import time
 
-from connection import ActiveMQNode, LogListener, make_connection
-from evaluation_plan import StatementParser, AtomicEventType
-from atomicEventProducer import AtomicEventProducer
+import stomp
 
+from atomicEventProducer import AtomicEventProducer
+from connection import ActiveMQNode, LogListener, make_connection
+from evaluation_plan import AtomicEventType, StatementParser
 
 if __name__ == "__main__":
     """
@@ -56,16 +56,30 @@ if __name__ == "__main__":
             connection=make_connection(),
             id_=node.value,
             query_topic=statement.query.topic,
-            input_topics=statement.inputs_topics,
+            input_topics=statement.input_topics,
         )
         amq_node.send(f"TEST from {amq_node.id}")
         time.sleep(0.1)
 
-    print('creating atomic eventProducers...')
-    a_event_producer = AtomicEventProducer(AtomicEventType.A, AtomicEventProducer.fileNameAEvents)
-    b_event_producer = AtomicEventProducer(AtomicEventType.B, AtomicEventProducer.fileNameBEvents)
-    c_event_producer = AtomicEventProducer(AtomicEventType.C, AtomicEventProducer.fileNameCEvents)
-    d_event_producer = AtomicEventProducer(AtomicEventType.D, AtomicEventProducer.fileNameDEvents)
-    e_event_producer = AtomicEventProducer(AtomicEventType.E, AtomicEventProducer.fileNameEEvents)
-    f_event_producer = AtomicEventProducer(AtomicEventType.F, AtomicEventProducer.fileNameFEvents)
-    j_event_producer = AtomicEventProducer(AtomicEventType.J, AtomicEventProducer.fileNameJEvents)
+    print("creating atomic eventProducers...")
+    a_event_producer = AtomicEventProducer(
+        AtomicEventType.A, AtomicEventProducer.fileNameAEvents
+    )
+    b_event_producer = AtomicEventProducer(
+        AtomicEventType.B, AtomicEventProducer.fileNameBEvents
+    )
+    c_event_producer = AtomicEventProducer(
+        AtomicEventType.C, AtomicEventProducer.fileNameCEvents
+    )
+    d_event_producer = AtomicEventProducer(
+        AtomicEventType.D, AtomicEventProducer.fileNameDEvents
+    )
+    e_event_producer = AtomicEventProducer(
+        AtomicEventType.E, AtomicEventProducer.fileNameEEvents
+    )
+    f_event_producer = AtomicEventProducer(
+        AtomicEventType.F, AtomicEventProducer.fileNameFEvents
+    )
+    j_event_producer = AtomicEventProducer(
+        AtomicEventType.J, AtomicEventProducer.fileNameJEvents
+    )
