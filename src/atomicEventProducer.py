@@ -14,30 +14,24 @@ class AtomicEventProducer(ActiveMQNode):
   fileNameFEvents = 'atomicEvents_F_intervals.csv'
   fileNameJEvents = 'atomicEvents_J_intervals.csv'
 
-  def __init__(self, atomicEventType, eventIntervalsFileName, connection, id):
-    super().__init__(connection, id, None, atomicEventType.value)
-    self.atomicEventType = atomicEventType
+  def __init__(self, eventIntervalsFileName, connection, id):
+    super().__init__(connection, id, None, ['A', 'B', 'C', 'D', 'E', 'F', 'J'])
     with open(eventIntervalsFileName) as f:
         reader = csv.reader(f, delimiter=",")
-        self.eventIntervals = list(reader)[0]
+        self.eventTimestamps = list(reader)
 
   def pushEvents(self):
-    for interval in self.eventIntervals:
-      print('now sending, then waiting for {}s'.format(int(interval)/1000))
-      super().send("A")
-      time.sleep(int(interval)/1000)
+    print(self.eventTimestamps)
+    eventsPushedCounter = 0
+    currentTime = 0
+    while eventsPushedCounter < len(self.eventTimestamps):
+      print('next event is')
+      #time.sleep(self.eventTimestamps[eventsPushedCounter + 1][0] - currentTime)
+      print('now pushing ' + self.eventTimestamps[eventsPushedCounter + 1][1])
+
 
 def register_and_start_atomic_event_producers():
     connection = make_connection()
-
-    print('creating atomic eventProducers...')
-    a_event_producer = AtomicEventProducer(AtomicEventType.A, AtomicEventProducer.fileNameAEvents, connection, 'a_node')
-    b_event_producer = AtomicEventProducer(AtomicEventType.B, AtomicEventProducer.fileNameBEvents, connection, 'b_node')
-    c_event_producer = AtomicEventProducer(AtomicEventType.C, AtomicEventProducer.fileNameCEvents, connection, 'c_node')
-    d_event_producer = AtomicEventProducer(AtomicEventType.D, AtomicEventProducer.fileNameDEvents, connection, 'd_node')
-    e_event_producer = AtomicEventProducer(AtomicEventType.E, AtomicEventProducer.fileNameEEvents, connection, 'e_node')
-    f_event_producer = AtomicEventProducer(AtomicEventType.F, AtomicEventProducer.fileNameFEvents, connection, 'f_node')
-    j_event_producer = AtomicEventProducer(AtomicEventType.J, AtomicEventProducer.fileNameJEvents, connection, 'j_node')
-
+    atomic_event_producer = AtomicEventProducer('combinedEventTimestamps.csv', connection, 'atomicEventProducer')
     print('nodes created. Start pushing atomic events now')
-    a_event_producer.pushEvents()
+    atomic_event_producer.pushEvents()
