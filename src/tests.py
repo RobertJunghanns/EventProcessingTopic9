@@ -4,10 +4,17 @@ from multiprocessing import Queue
 import pytest
 import stomp
 
-from connection import ActiveMQNode, ExceptionListener, LogListener, make_connection
+from connection import (
+    ActiveMQNode,
+    CTRLMessage,
+    CTRLMessageType,
+    LogListener,
+    NodeManager,
+    make_connection,
+)
 from evaluation_plan import (
     AtomicEventType,
-    Node,
+    NodeEnum,
     Operator,
     Query,
     Statement,
@@ -106,7 +113,7 @@ def test_statement_parser():
     parsed = StatementParser(statement).parse()
 
     assert parsed == Statement(
-        nodes=[Node.FOUR],
+        nodes=[NodeEnum.FOUR],
         query=Query(
             operator=Operator.SEQ, operands=[AtomicEventType.J, AtomicEventType.A]
         ),
@@ -119,7 +126,7 @@ def test_statement_parser_two():
     parsed = StatementParser(statement).parse()
 
     assert parsed == Statement(
-        nodes=[Node.FIVE, Node.NINE],
+        nodes=[NodeEnum.FIVE, NodeEnum.NINE],
         query=Query(
             operator=Operator.AND,
             operands=[
@@ -149,37 +156,86 @@ def test_connection():
 
 
 def test_activemq_with_statement(capsys):
-    """
-    This test doesn't seem to work yet, but it's a start.
-    I monitored the ActiveMQ broker on the console and I can see the messages
-    being sent on the topic, but the ExceptionListener is not being called on
-    the subscriber side. I'm not sure why yet...
-    """
-
     statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}"
     parser = StatementParser(statement=statement)
     statement = parser.parse()
 
+    topic = f"/topic/{statement.query.topic}"  # currently this is a hash
+
     # Set up subscription to query topic
     conn = make_connection()
     conn.subscribe(
-        destination=f"/topic/{statement.query.topic}",  # hash of the query.topic
+        destination=topic,
         id=f"test-sub-{statement.query.topic}",
         ack="auto",
     )
 
     for node in statement.nodes:
-        amq_node = ActiveMQNode(
+        node = ActiveMQNode(
             id_=node.value,
             queue=Queue(),
-            connection=make_connection(),
+            connection_factory=make_connection,
             statements=[statement],
         )
-        amq_node.send(
-            f"TEST from {amq_node.id}", topic=f"/topic/{statement.query.topic}"
-        )
+
+        # Do not start Node as Process, just check if sending a message works
+        node.activemq_connection = make_connection()
+        node.send(f"Hello from Node {node.id}", topic=topic)
 
     time.sleep(0.01)
     captured = capsys.readouterr().out
-    assert "TEST from 5" in captured
-    assert "TEST from 9" in captured
+    assert "Hello from Node 5" in captured
+    assert "Hello from Node 9" in captured
+
+
+def test_nodes_as_processes():
+    """
+    Run this test with 'pytest -vv -s' to see the output from the process
+    """
+    statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5}"
+    parser = StatementParser(statement=statement)
+    statement = parser.parse()
+
+    node_5 = ActiveMQNode(
+        id_=5,
+        queue=Queue(),
+        connection_factory=make_connection,
+        statements=[statement],
+    )
+
+    # Start node as Process
+    node_5.start()
+
+    # From now on, we can only communicate with the node process via the queue
+    node_5.queue.put(CTRLMessage(CTRLMessageType.STOP))
+
+    # Wait for node process to finish
+    node_5.join()
+
+
+def test_nodemanager():
+    """
+    Run this test with 'pytest -vv -s' to see the output from the processes
+    """
+    manager = NodeManager()
+    manager.start_node(1)
+    manager.start_node(2)
+
+    statement_one = Statement(
+        [NodeEnum.ONE],
+        Query(Operator.AND, [AtomicEventType.A, AtomicEventType.B]),
+        inputs=[AtomicEventType.A, AtomicEventType.B],
+    )
+
+    statement_two = Statement(
+        [NodeEnum.TWO],
+        Query(Operator.AND, [AtomicEventType.C, AtomicEventType.D]),
+        inputs=[AtomicEventType.C, AtomicEventType.D],
+    )
+
+    # we can address nodes either by their integer id or by the NodeEnum class
+    manager.send_statement_to_node(node_id=1, statement=statement_one)
+    manager.send_statement_to_node(node_id=NodeEnum.TWO, statement=statement_two)
+
+    manager.stop_node(1)
+    manager.stop_node(2)

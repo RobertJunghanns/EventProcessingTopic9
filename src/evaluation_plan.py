@@ -37,7 +37,7 @@ class Operator(ValueEnum):
     SEQ = "SEQ"
 
 
-class Node(Enum):
+class NodeEnum(Enum):
     ONE = 1
     TWO = 2
     THREE = 3
@@ -51,7 +51,7 @@ class Node(Enum):
 
 @dataclass
 class Statement:
-    nodes: "list[Node]"
+    nodes: "list[NodeEnum]"
     query: "Query"
     inputs: "list[AtomicEventType | Query]"
 
@@ -251,6 +251,6 @@ class StatementParser:
 
         query = Query.from_string(match.group(1))
         inputs = Query.parse_operands(match.group(2))
-        nodes = [Node(int(node)) for node in match.group(3).split(",")]
+        nodes = [NodeEnum(int(node)) for node in match.group(3).split(",")]
 
         return Statement(query=query, inputs=inputs, nodes=nodes)
