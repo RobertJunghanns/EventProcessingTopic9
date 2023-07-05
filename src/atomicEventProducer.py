@@ -21,13 +21,14 @@ class AtomicEventProducer(ActiveMQNode):
         self.eventTimestamps = list(reader)
 
   def pushEvents(self):
-    print(self.eventTimestamps)
-    eventsPushedCounter = 0
-    currentTime = 0
-    while eventsPushedCounter < len(self.eventTimestamps):
-      print('next event is')
-      #time.sleep(self.eventTimestamps[eventsPushedCounter + 1][0] - currentTime)
-      print('now pushing ' + self.eventTimestamps[eventsPushedCounter + 1][1])
+    previousEvent = ["0", ""]
+    timeDifferenceToCurrentEvent = 0
+    for currentEvent in self.eventTimestamps:
+      timeDifferenceToCurrentEvent = int(currentEvent[0]) - int(previousEvent[0])  
+      time.sleep(timeDifferenceToCurrentEvent / 1000)
+      super().setQueryTopic(currentEvent[1])
+      super().send(currentEvent[1])
+      previousEvent = currentEvent
 
 
 def register_and_start_atomic_event_producers():
