@@ -35,6 +35,9 @@ class ActiveMQNode:
     def disconnect(self):
         self.conn.disconnect()
 
+    def setQueryTopic(self, val):
+        self.query_topic = val
+
     def __str__(self):
         return f"Connection(conn={self.conn}, id='{self.id}', query_topic='{self.query_topic}', input_topics={self.input_topics})"
 

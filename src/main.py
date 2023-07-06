@@ -3,7 +3,7 @@ import time
 
 from connection import ActiveMQNode, LogListener, make_connection
 from evaluation_plan import StatementParser, AtomicEventType
-from atomicEventProducer import AtomicEventProducer
+from atomicEventProducer import AtomicEventProducer, register_and_start_atomic_event_producers
 
 
 if __name__ == "__main__":
@@ -61,11 +61,4 @@ if __name__ == "__main__":
         amq_node.send(f"TEST from {amq_node.id}")
         time.sleep(0.1)
 
-    print('creating atomic eventProducers...')
-    a_event_producer = AtomicEventProducer(AtomicEventType.A, AtomicEventProducer.fileNameAEvents)
-    b_event_producer = AtomicEventProducer(AtomicEventType.B, AtomicEventProducer.fileNameBEvents)
-    c_event_producer = AtomicEventProducer(AtomicEventType.C, AtomicEventProducer.fileNameCEvents)
-    d_event_producer = AtomicEventProducer(AtomicEventType.D, AtomicEventProducer.fileNameDEvents)
-    e_event_producer = AtomicEventProducer(AtomicEventType.E, AtomicEventProducer.fileNameEEvents)
-    f_event_producer = AtomicEventProducer(AtomicEventType.F, AtomicEventProducer.fileNameFEvents)
-    j_event_producer = AtomicEventProducer(AtomicEventType.J, AtomicEventProducer.fileNameJEvents)
+    register_and_start_atomic_event_producers()
