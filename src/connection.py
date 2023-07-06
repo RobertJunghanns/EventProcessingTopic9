@@ -51,7 +51,7 @@ class ActiveMQNode(Process):
     def __init__(
         self,
         id_: int,
-        queue: Queue = Queue(),
+        queue: Queue,
         connection_factory: Callable = make_connection,
         statements: Optional[list[Statement]] = None,
         **kwargs,
@@ -204,11 +204,13 @@ class NodeManager:
         return self._nodes.get(node_id, None)
 
     def start_node(self, node: int | NodeEnum | ActiveMQNode):
+        queue = Queue()
+
         if isinstance(node, NodeEnum):
-            node = ActiveMQNode(id_=node.value)
+            node = ActiveMQNode(id_=node.value, queue=queue)
 
         if isinstance(node, int):
-            node = ActiveMQNode(id_=node)
+            node = ActiveMQNode(id_=node, queue=queue)
 
         self.add_node(node)
         node.start()
