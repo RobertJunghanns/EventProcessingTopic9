@@ -16,18 +16,18 @@ from evaluation_plan import NodeEnum, Statement
 
 class LogListener(stomp.ConnectionListener):
     def on_error(self, message):
-        print('received an error "%s"' % message)
+        print('LogListener received an error "%s"' % message)
 
     def on_message(self, message):
-        print('received a message "%s"' % message)
+        print('LogListener received a message "%s"' % message)
 
 
 class ExceptionListener(stomp.ConnectionListener):
     def on_error(self, message):
-        raise Exception('received an error "%s"' % message)
+        raise Exception('ExceptionListener received an error "%s"' % message)
 
     def on_message(self, message):
-        raise Exception('received a message "%s"' % message)
+        raise Exception('ExceptionListener received a message "%s"' % message)
 
 
 def make_connection(listener=LogListener()):
@@ -51,11 +51,11 @@ class CTRLMessage:
     payload: Statement | None = None
 
 
-class ActiveMQNode(Process):
+class ActiveMQNode(stomp.ConnectionListener, Process):
     def __init__(
         self,
         id_: int,
-        queue: Queue = Queue(),
+        queue: Queue,
         statements: Optional[list[Statement]] = None,
         **kwargs,
     ):
@@ -66,6 +66,15 @@ class ActiveMQNode(Process):
         self.running: bool = True
 
         super().__init__(**kwargs)
+
+    def on_message(self, message):
+        print(f"ActiveMQNodeListener - Received message {message}")
+
+        # TODO Make me work!
+        # self.inputHandler.send([message])
+
+    def on_error(self, error):
+        print(f"ActiveMQNodeListener - Received error {error}")
 
     @property
     def topic_subscriptions(self):
@@ -88,12 +97,12 @@ class ActiveMQNode(Process):
     def createActiveMqConnection(self):
         hosts = [("localhost", 61613)]
         self.activemq_connection = stomp.Connection(host_and_ports=hosts)
-        # self.activemq_connection.set_listener("", PySiddhiListener(self))
+        self.activemq_connection.set_listener("listener", self)
         self.activemq_connection.connect("admin", "admin", wait=True)
 
     def unsubscribe(self, topic):
         subscription_id = f"sub-{self.id}-{topic}"
-        # self.activemq_connection.unsubscribe(id=subscription_id)
+        self.activemq_connection.unsubscribe(id=subscription_id)
 
     def subscribe_to_topics(self, ack="auto"):
         for topic in self.topic_subscriptions:
@@ -108,7 +117,6 @@ class ActiveMQNode(Process):
 
     def evaluate_statement(self, statement):
         # Siddhi implementation goes here
-
         time.sleep(0.001)
         print(f"Node {self.id} is working on statement {statement}...")
 
@@ -148,11 +156,9 @@ class ActiveMQNode(Process):
 
         for topic in statement.input_topics:
             self.subscribe(topic)
+            self.send(f"TEST for topic {topic}", topic)
 
         self.advertise(statement.query.topic)
-
-        # if self.activemq_connection is not None:
-        #     self.activemq_connection.set_listener("", PySiddhiListener(self))
 
     def remove_statement(self, statement: Statement):
         self.statements.remove(statement)
@@ -216,11 +222,13 @@ class NodeManager:
         return self._nodes.get(node_id, None)
 
     def start_node(self, node: int | NodeEnum | ActiveMQNode):
+        queue = Queue()
+
         if isinstance(node, NodeEnum):
-            node = ActiveMQNode(id_=node.value)
+            node = ActiveMQNode(id_=node.value, queue=queue)
 
         if isinstance(node, int):
-            node = ActiveMQNode(id_=node)
+            node = ActiveMQNode(id_=node, queue=queue)
 
         self.add_node(node)
         node.start()
@@ -273,43 +281,43 @@ class QueryCallbackImpl:
         # PrintEvent(timestamp, inEvents, outEvents)
         # Send to specific topic
         print(f"PySiddhi received {( timestamp, inEvents, outEvents)}")
-        # self.activemq_node.send()
 
 
 # export JAVA_HOME='/Users/robertjunghanns/Library/Java/JavaVirtualMachines/openjdk-15.0.1/Contents/Home'
 # export SIDDHISDK_HOME='/Users/robertjunghanns/Library/Siddhi/siddhi-sdk-5.1.2'
-class PySiddhiListener(stomp.ConnectionListener):
-    # def __init__(self):
-    # self.activemq_node = activemq_node
-    # self.siddhiManager = SiddhiManager()
+# class PySiddhiListener(stomp.ConnectionListener):
+#     def __init__(self):
+#         self.siddhiManager = SiddhiManager()
 
-    # self.siddhiApp = (
-    #     "define stream eventStream (eventType string);"
-    #     + "@info(name = 'query1') from eventStream select eventType insert into outputStream;"
-    # )
+#     self.siddhiApp = (
+#         "define stream eventStream (eventType string);"
+#         + "@info(name = 'query1') from eventStream select eventType insert into outputStream;"
+#     )
 
-    # # Add queries on eventStrem for each statement of node
-    # for i, statement in enumerate(activemq_node.statements):
-    #     # HERE Parse statements from activemq_node to siddhi queries
-    #     self.siddhiApp += ""
+#     # Add queries on eventStrem for each statement of node
+#     for i, statement in enumerate(activemq_node.statements):
+#         # HERE Parse statements from activemq_node to siddhi queries
+#         self.siddhiApp += ""
 
-    # # Generate the Siddhi runtime
-    # self.siddhiManager.createSiddhiAppRuntime(self.siddhiApp)
+#     # Generate the Siddhi runtime
+#     self.siddhiManager.createSiddhiAppRuntime(self.siddhiApp)
 
-    # for i, statement in enumerate(activemq_node.statements):
-    #     # Add the callback implementation to the runtime
-    #     self.siddhiAppRuntime.addCallback("query"+str(i), QueryCallbackImpl(activemq_node))
+#     for i, statement in enumerate(activemq_node.statements):
+#         # Add the callback implementation to the runtime
+#         self.siddhiAppRuntime.addCallback("query" + str(i), QueryCallbackImpl())
 
-    # # Retrieve the input handler to push events into Siddhi
-    # self.inputHandler = self.siddhiAppRuntime.getInputHandler("eventStream")
+#     # Retrieve the input handler to push events into Siddhi
+#     self.inputHandler = self.siddhiAppRuntime.getInputHandler("eventStream")
 
-    # # Start event processing
-    # self.siddhiAppRuntime.start()
+#     # Start event processing
+#     self.siddhiAppRuntime.start()
 
-    def on_error(self, message):
-        raise Exception('received an error "%s"' % message)
+#     def add_query_callback(self, query_id, callback=QueryCallbackImpl()):
+#         self.siddhiAppRuntime.addCallback(f"query{query_id}", callback)
 
-    def on_message(self, message):
-        print(f"PYSIDDHI - Received message {message}")
-        return
-        # self.inputHandler.send([message])
+#     def on_error(self, message):
+#         raise Exception('received an error "%s"' % message)
+
+#     def on_message(self, message):
+#         print(f"PYSIDDHI - Received message {message}")
+#         self.inputHandler.send([message])

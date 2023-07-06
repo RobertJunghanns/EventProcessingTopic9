@@ -171,7 +171,8 @@ def test_activemq_with_statement(capsys):
     )
 
     for node in statement.nodes:
-        node = ActiveMQNode(id_=node.value, statements=[statement])
+        queue = Queue()
+        node = ActiveMQNode(id_=node.value, queue=queue, statements=[statement])
 
         # Do not start Node as Process, just check if sending a message works
         node.activemq_connection = make_connection()
@@ -191,7 +192,8 @@ def test_nodes_as_processes():
     parser = StatementParser(statement=statement)
     statement = parser.parse()
 
-    node_5 = ActiveMQNode(id_=5, statements=[statement])
+    queue = Queue()
+    node_5 = ActiveMQNode(id_=5, queue=queue, statements=[statement])
 
     # Start node as Process
     node_5.start()
