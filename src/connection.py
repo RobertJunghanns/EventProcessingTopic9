@@ -51,16 +51,14 @@ class ActiveMQNode(Process):
     def __init__(
         self,
         id_: int,
-        queue: Optional[Queue] = None,
-        connection_factory: Optional[Callable] = None,
+        queue: Queue = Queue(),
+        connection_factory: Callable = make_connection,
         statements: Optional[list[Statement]] = None,
         **kwargs,
     ):
         self.id: int = int(id_)
-        self.queue: Queue = queue or Queue()
-        self.activemq_connection_factory: Callable = (
-            connection_factory or make_connection
-        )
+        self.queue: Queue = queue
+        self.activemq_connection_factory: Callable = connection_factory
         self.activemq_connection: stomp.Connection = None  # don't initialize here!
         self.statements: list[Statement] = statements or []
         self.running: bool = True
