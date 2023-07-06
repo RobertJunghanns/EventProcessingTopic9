@@ -38,6 +38,7 @@ class Operator(ValueEnum):
 
 
 class NodeEnum(Enum):
+    ZERO = 0
     ONE = 1
     TWO = 2
     THREE = 3

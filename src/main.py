@@ -1,7 +1,7 @@
 import time
 import stomp
 from atomicEventProducer import AtomicEventProducer, register_and_start_atomic_event_producers
-from connection import ActiveMQNode, LogListener, make_connection
+from connection import ActiveMQNode, LogListener, NodeManager, PySiddhiListener, make_connection
 from evaluation_plan import AtomicEventType, StatementParser
 
 if __name__ == "__main__":
@@ -35,29 +35,24 @@ if __name__ == "__main__":
     # conn.disconnect()
 
     # Set up subscription to query topic
-    subscriber_conn = make_connection()
-    subscriber_conn.subscribe(
-        destination="/topic/ba1c8dd36be209285e64c7bb1e41d817",  # hash of the query.topic
-        id="ba1c8dd36be209285e64c7bb1e41d817_5",
-        ack="auto",
-    )
+    #subscriber_conn = make_connection(PySiddhiListener())
+    #subscriber_conn.subscribe(
+    #    destination="/topic/ba1c8dd36be209285e64c7bb1e41d817",  # hash of the query.topic
+    #    id="ba1c8dd36be209285e64c7bb1e41d817_5",
+    #    ack="auto",
+    #)
 
-    statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}"
+    statement = "SELECT SEQ(A, F, C) FROM A, F, C ON {0}"
+    #statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5}"
 
     parser = StatementParser(statement=statement)
     statement = parser.parse()
 
-    amq_nodes = []
+    print(statement)
 
-    for node in statement.nodes:
-        amq_node = ActiveMQNode(
-            connection=make_connection(),
-            id_=node.value,
-            query_topic=statement.query.topic,
-            input_topics=statement.input_topics,
-        )
-        amq_node.send(f"TEST from {amq_node.id}")
-        time.sleep(0.1)
+    manager = NodeManager()
+    manager.start_node(0)
+    manager.send_statement_to_node(statement=statement, node_id=0)
 
-    register_and_start_atomic_event_producers()
+    #register_and_start_atomic_event_producers()
 
