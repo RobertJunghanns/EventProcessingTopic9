@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from multiprocessing import Process, Queue
 from queue import Empty
-from typing import Any, Callable
+from typing import Callable, Optional
 
 import stomp
 
@@ -51,15 +51,17 @@ class ActiveMQNode(Process):
     def __init__(
         self,
         id_: int,
-        queue: Queue,
-        connection_factory: Callable,
-        statements: list[Statement] | None = None,
+        queue: Optional[Queue] = None,
+        connection_factory: Optional[Callable] = None,
+        statements: Optional[list[Statement]] = None,
         **kwargs,
     ):
         self.id: int = int(id_)
-        self.queue: Queue = queue
-        self.activemq_connection_factory: Callable = connection_factory
-        self.activemq_connection: stomp.Connection = None
+        self.queue: Queue = queue or Queue()
+        self.activemq_connection_factory: Callable = (
+            connection_factory or make_connection
+        )
+        self.activemq_connection: stomp.Connection = None  # don't initialize here!
         self.statements: list[Statement] = statements or []
         self.running: bool = True
 
@@ -169,9 +171,6 @@ class ActiveMQNode(Process):
                 self.handle_control_message(control_message)
             self.evaluate_statements()
 
-    def setQueryTopic(self, val):
-        self.query_topic = val
-
     def __str__(self):
         return f"Connection(id='{self.id}', activemq_connection={self.activemq_connection}, statements='{self.statements}')"
 
@@ -210,10 +209,18 @@ class NodeManager:
         queue = Queue()
 
         if isinstance(node, NodeEnum):
-            node = ActiveMQNode(node.value, queue, make_connection)
+            node = ActiveMQNode(
+                id_=node.value,
+                queue=queue,
+                connection_factory=make_connection,
+            )
 
         if isinstance(node, int):
-            node = ActiveMQNode(node, queue, make_connection)
+            node = ActiveMQNode(
+                id_=node,
+                queue=queue,
+                connection_factory=make_connection,
+            )
 
         self.add_node(node)
         node.start()
