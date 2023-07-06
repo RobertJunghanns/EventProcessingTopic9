@@ -266,8 +266,12 @@ class NodeManager:
 
 # ADAPT THIS CALLBACK TO SEND COMPOSITE EVENTS TO ACTIVE MQ
 class QueryCallbackImpl(QueryCallback):
+    def __init__(self, activemq_node : ActiveMQNode):
+        self.activemq_node = activemq_node
     def receive(self, timestamp, inEvents, outEvents):
         PrintEvent(timestamp, inEvents, outEvents)
+        # Send to specific topic
+        self.activemq_node.send()
 
 #export JAVA_HOME='/Users/robertjunghanns/Library/Java/JavaVirtualMachines/openjdk-15.0.1/Contents/Home'
 #export SIDDHISDK_HOME='/Users/robertjunghanns/Library/Siddhi/siddhi-sdk-5.1.2'
@@ -290,7 +294,7 @@ class PySiddhiListener(stomp.ConnectionListener):
 
         for i, statement in enumerate(activemq_node.statements):
             # Add the callback implementation to the runtime
-            self.siddhiAppRuntime.addCallback("query"+str(i), QueryCallbackImpl())
+            self.siddhiAppRuntime.addCallback("query"+str(i), QueryCallbackImpl(activemq_node))
 
         # Retrieve the input handler to push events into Siddhi
         self.inputHandler = self.siddhiAppRuntime.getInputHandler("eventStream")
