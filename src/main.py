@@ -1,10 +1,8 @@
-import stomp
 import time
-
-from connection import ActiveMQNode, LogListener, make_connection
-from evaluation_plan import StatementParser, AtomicEventType
+import stomp
 from atomicEventProducer import AtomicEventProducer, register_and_start_atomic_event_producers
-
+from connection import ActiveMQNode, LogListener, make_connection
+from evaluation_plan import AtomicEventType, StatementParser
 
 if __name__ == "__main__":
     """
@@ -56,9 +54,10 @@ if __name__ == "__main__":
             connection=make_connection(),
             id_=node.value,
             query_topic=statement.query.topic,
-            input_topics=statement.inputs_topics,
+            input_topics=statement.input_topics,
         )
         amq_node.send(f"TEST from {amq_node.id}")
         time.sleep(0.1)
 
     register_and_start_atomic_event_producers()
+

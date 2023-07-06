@@ -7,7 +7,7 @@ from typing import Any
 
 class ValueEnum(Enum):
     @classmethod
-    def values(cls) -> 'list[str]':
+    def values(cls) -> "list[str]":
         return [enum.value for enum in cls]
 
     @classmethod
@@ -37,7 +37,7 @@ class Operator(ValueEnum):
     SEQ = "SEQ"
 
 
-class Node(Enum):
+class NodeEnum(Enum):
     ONE = 1
     TWO = 2
     THREE = 3
@@ -51,13 +51,22 @@ class Node(Enum):
 
 @dataclass
 class Statement:
-    nodes: 'list[Node]'
+    nodes: "list[NodeEnum]"
     query: "Query"
     inputs: "list[AtomicEventType | Query]"
 
     @property
-    def inputs_topics(self) -> 'list[str]':
-        return [input_.topic for input_ in self.inputs]
+    def input_topics(self) -> "list[str]":
+        return sorted([input_.topic for input_ in self.inputs])
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Statement):
+            return False
+
+        return (
+            self.query.topic == other.query.topic
+            and self.input_topics == other.input_topics
+        )
 
 
 @dataclass
@@ -120,7 +129,7 @@ class Query:
         ]
 
     @staticmethod
-    def split_operands(operands: str) -> 'list[str]':
+    def split_operands(operands: str) -> "list[str]":
         """
         Split operands into a list of strings, one level deep.
 
@@ -242,6 +251,6 @@ class StatementParser:
 
         query = Query.from_string(match.group(1))
         inputs = Query.parse_operands(match.group(2))
-        nodes = [Node(int(node)) for node in match.group(3).split(",")]
+        nodes = [NodeEnum(int(node)) for node in match.group(3).split(",")]
 
         return Statement(query=query, inputs=inputs, nodes=nodes)
