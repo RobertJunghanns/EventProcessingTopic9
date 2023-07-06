@@ -204,21 +204,11 @@ class NodeManager:
         return self._nodes.get(node_id, None)
 
     def start_node(self, node: int | NodeEnum | ActiveMQNode):
-        queue = Queue()
-
         if isinstance(node, NodeEnum):
-            node = ActiveMQNode(
-                id_=node.value,
-                queue=queue,
-                connection_factory=make_connection,
-            )
+            node = ActiveMQNode(id_=node.value)
 
         if isinstance(node, int):
-            node = ActiveMQNode(
-                id_=node,
-                queue=queue,
-                connection_factory=make_connection,
-            )
+            node = ActiveMQNode(id_=node)
 
         self.add_node(node)
         node.start()

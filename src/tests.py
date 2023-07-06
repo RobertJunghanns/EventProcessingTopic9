@@ -173,8 +173,6 @@ def test_activemq_with_statement(capsys):
     for node in statement.nodes:
         node = ActiveMQNode(
             id_=node.value,
-            queue=Queue(),
-            connection_factory=make_connection,
             statements=[statement],
         )
 
@@ -198,8 +196,6 @@ def test_nodes_as_processes():
 
     node_5 = ActiveMQNode(
         id_=5,
-        queue=Queue(),
-        connection_factory=make_connection,
         statements=[statement],
     )
 

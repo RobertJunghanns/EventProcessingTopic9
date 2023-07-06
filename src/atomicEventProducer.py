@@ -1,8 +1,7 @@
 import csv
 import time
-from multiprocessing import Queue
 
-from connection import ActiveMQNode, make_connection
+from connection import ActiveMQNode
 
 
 class AtomicEventProducer(ActiveMQNode):
@@ -39,8 +38,6 @@ def register_and_start_atomic_event_producers():
     atomic_event_producer = AtomicEventProducer(
         id_=0,
         eventIntervalsFileName="combinedEventTimestamps.csv",
-        queue=Queue(),
-        connection_factory=make_connection,
     )
     print("nodes created. Start pushing atomic events now")
     atomic_event_producer.pushEvents()
