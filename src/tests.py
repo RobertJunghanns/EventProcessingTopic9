@@ -171,10 +171,7 @@ def test_activemq_with_statement(capsys):
     )
 
     for node in statement.nodes:
-        node = ActiveMQNode(
-            id_=node.value,
-            statements=[statement],
-        )
+        node = ActiveMQNode(id_=node.value, statements=[statement])
 
         # Do not start Node as Process, just check if sending a message works
         node.activemq_connection = make_connection()
@@ -194,10 +191,7 @@ def test_nodes_as_processes():
     parser = StatementParser(statement=statement)
     statement = parser.parse()
 
-    node_5 = ActiveMQNode(
-        id_=5,
-        statements=[statement],
-    )
+    node_5 = ActiveMQNode(id_=5, statements=[statement])
 
     # Start node as Process
     node_5.start()
@@ -214,7 +208,9 @@ def test_nodemanager():
     Run this test with 'pytest -vv -s' to see the output from the processes
     """
     manager = NodeManager()
-    manager.start_node(1)
+
+    # we can address nodes either by their integer id or by the NodeEnum class
+    manager.start_node(NodeEnum.ONE)
     manager.start_node(2)
 
     statement_one = Statement(
