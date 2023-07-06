@@ -9,9 +9,10 @@ import stomp
 
 from evaluation_plan import NodeEnum, Statement
 
-from PySiddhi.core.SiddhiManager import SiddhiManager
-from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
-from PySiddhi.core.util.EventPrinter import PrintEvent
+# from PySiddhi.core.SiddhiManager import SiddhiManager
+# from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
+# from PySiddhi.core.util.EventPrinter import PrintEvent
+
 
 class LogListener(stomp.ConnectionListener):
     def on_error(self, message):
@@ -27,6 +28,7 @@ class ExceptionListener(stomp.ConnectionListener):
 
     def on_message(self, message):
         raise Exception('received a message "%s"' % message)
+
 
 def make_connection(listener=LogListener()):
     hosts = [("localhost", 61613)]
@@ -82,13 +84,13 @@ class ActiveMQNode(Process):
         self.activemq_connection.subscribe(
             destination=topic, id=subscription_id, ack=ack
         )
-    
+
     def createActiveMqConnection(self):
         hosts = [("localhost", 61613)]
         self.activemq_connection = stomp.Connection(host_and_ports=hosts)
-        self.activemq_connection.set_listener("", PySiddhiListener(self))
+        # self.activemq_connection.set_listener("", PySiddhiListener(self))
         self.activemq_connection.connect("admin", "admin", wait=True)
-        
+
     def unsubscribe(self, topic):
         subscription_id = f"sub-{self.id}-{topic}"
         # self.activemq_connection.unsubscribe(id=subscription_id)
@@ -149,8 +151,8 @@ class ActiveMQNode(Process):
 
         self.advertise(statement.query.topic)
 
-        if(self.activemq_connection is not None):
-            self.activemq_connection.set_listener("", PySiddhiListener(self))
+        # if self.activemq_connection is not None:
+        #     self.activemq_connection.set_listener("", PySiddhiListener(self))
 
     def remove_statement(self, statement: Statement):
         self.statements.remove(statement)
@@ -167,12 +169,12 @@ class ActiveMQNode(Process):
     def run(self):
         # Set up connection to ActiveMQ,
         # we can not do this in __init__ because the connection is not serializable
-        #self.activemq_connection = self.activemq_connection_factory()
+        # self.activemq_connection = self.activemq_connection_factory()
         self.createActiveMqConnection()
 
         # Set up subscription to input topics
         self.subscribe_to_topics()
-        self.advertise_topics() # isn't this already interpreted as an acutal sending of an composite event?
+        self.advertise_topics()  # isn't this already interpreted as an acutal sending of an composite event?
 
         while self.running:
             if control_message := self.get_control_message(timeout=0.01):
@@ -264,46 +266,50 @@ class NodeManager:
             )
         )
 
+
 # ADAPT THIS CALLBACK TO SEND COMPOSITE EVENTS TO ACTIVE MQ
-class QueryCallbackImpl(QueryCallback):
-    def __init__(self, activemq_node : ActiveMQNode):
-        self.activemq_node = activemq_node
+class QueryCallbackImpl:
     def receive(self, timestamp, inEvents, outEvents):
-        PrintEvent(timestamp, inEvents, outEvents)
+        # PrintEvent(timestamp, inEvents, outEvents)
         # Send to specific topic
-        self.activemq_node.send()
+        print(f"PySiddhi received {( timestamp, inEvents, outEvents)}")
+        # self.activemq_node.send()
 
-#export JAVA_HOME='/Users/robertjunghanns/Library/Java/JavaVirtualMachines/openjdk-15.0.1/Contents/Home'
-#export SIDDHISDK_HOME='/Users/robertjunghanns/Library/Siddhi/siddhi-sdk-5.1.2'
+
+# export JAVA_HOME='/Users/robertjunghanns/Library/Java/JavaVirtualMachines/openjdk-15.0.1/Contents/Home'
+# export SIDDHISDK_HOME='/Users/robertjunghanns/Library/Siddhi/siddhi-sdk-5.1.2'
 class PySiddhiListener(stomp.ConnectionListener):
-    def __init__(self, activemq_node : ActiveMQNode):
+    # def __init__(self):
+    # self.activemq_node = activemq_node
+    # self.siddhiManager = SiddhiManager()
 
-        self.activemq_node = activemq_node
-        self.siddhiManager = SiddhiManager()
+    # self.siddhiApp = (
+    #     "define stream eventStream (eventType string);"
+    #     + "@info(name = 'query1') from eventStream select eventType insert into outputStream;"
+    # )
 
-        self.siddhiApp = "define stream eventStream (eventType string);" + \
-                            "@info(name = 'query1') from eventStream select eventType insert into outputStream;"
-        
-        # Add queries on eventStrem for each statement of node
-        for i, statement in enumerate(activemq_node.statements):
-            # HERE Parse statements from activemq_node to siddhi queries
-            self.siddhiApp += ""
-        
-        # Generate the Siddhi runtime
-        self.siddhiManager.createSiddhiAppRuntime(self.siddhiApp)
+    # # Add queries on eventStrem for each statement of node
+    # for i, statement in enumerate(activemq_node.statements):
+    #     # HERE Parse statements from activemq_node to siddhi queries
+    #     self.siddhiApp += ""
 
-        for i, statement in enumerate(activemq_node.statements):
-            # Add the callback implementation to the runtime
-            self.siddhiAppRuntime.addCallback("query"+str(i), QueryCallbackImpl(activemq_node))
+    # # Generate the Siddhi runtime
+    # self.siddhiManager.createSiddhiAppRuntime(self.siddhiApp)
 
-        # Retrieve the input handler to push events into Siddhi
-        self.inputHandler = self.siddhiAppRuntime.getInputHandler("eventStream")
+    # for i, statement in enumerate(activemq_node.statements):
+    #     # Add the callback implementation to the runtime
+    #     self.siddhiAppRuntime.addCallback("query"+str(i), QueryCallbackImpl(activemq_node))
 
-        # Start event processing
-        self.siddhiAppRuntime.start()
+    # # Retrieve the input handler to push events into Siddhi
+    # self.inputHandler = self.siddhiAppRuntime.getInputHandler("eventStream")
+
+    # # Start event processing
+    # self.siddhiAppRuntime.start()
 
     def on_error(self, message):
         raise Exception('received an error "%s"' % message)
 
     def on_message(self, message):
-        self.inputHandler.send([message])
+        print(f"PYSIDDHI - Received message {message}")
+        return
+        # self.inputHandler.send([message])

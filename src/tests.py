@@ -177,7 +177,7 @@ def test_activemq_with_statement(capsys):
         node.activemq_connection = make_connection()
         node.send(f"Hello from Node {node.id}", topic=topic)
 
-    time.sleep(0.01)
+    time.sleep(0.05)
     captured = capsys.readouterr().out
     assert "Hello from Node 5" in captured
     assert "Hello from Node 9" in captured
