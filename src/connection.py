@@ -169,6 +169,9 @@ class ActiveMQNode(Process):
                 self.handle_control_message(control_message)
             self.evaluate_statements()
 
+    def setQueryTopic(self, val):
+        self.query_topic = val
+
     def __str__(self):
         return f"Connection(id='{self.id}', activemq_connection={self.activemq_connection}, statements='{self.statements}')"
 
