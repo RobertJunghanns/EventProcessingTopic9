@@ -2,8 +2,8 @@ from PySiddhi.DataTypes.LongType import LongType
 from PySiddhi.core.SiddhiManager import SiddhiManager
 from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
 from PySiddhi.core.util.EventPrinter import PrintEvent
-from time import sleep
 
+from time import sleep
 
 
 # Add listener to capture output events
@@ -11,7 +11,8 @@ class QueryCallbackImpl(QueryCallback):
     def receive(self, timestamp, inEvents, outEvents):
         PrintEvent(timestamp, inEvents, outEvents)
 
-def main():
+
+def test_siddhin():
     siddhiManager = SiddhiManager()
 
     # Siddhi Query to filter events with volume less than 150 as output
@@ -40,10 +41,6 @@ def main():
     inputHandler.send(["WSO2", 45.6, LongType(50)])
 
     # Wait for response
-    sleep(10)
+    sleep(5)
 
     siddhiManager.shutdown()
-
-if __name__ == "__main__":
-    print("main")
-    main()

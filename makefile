@@ -1,4 +1,4 @@
 .PHONY: test
 test:
 	@echo "Running tests..."
-	@docker-compose run --build main pytest 
+	@docker-compose up --build

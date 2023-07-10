@@ -148,10 +148,7 @@ def test_statement_parser_two():
 
 def test_connection():
     # smoke test
-    conn = stomp.Connection(host_and_ports=[("localhost", 61613)])
-    conn.set_listener("", LogListener())
-
-    conn.connect("admin", "admin", wait=True)
+    conn = make_connection()
     conn.disconnect()
 
 

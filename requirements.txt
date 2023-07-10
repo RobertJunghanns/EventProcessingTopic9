@@ -1,3 +1,2 @@
 pytest==7.*
-stomp.py==8.1.* 
-pysiddhi
+stomp.py==8.1.*
