@@ -1,9 +1,12 @@
-from PySiddhi.DataTypes.LongType import LongType
-from PySiddhi.core.SiddhiManager import SiddhiManager
-from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
-from PySiddhi.core.util.EventPrinter import PrintEvent
-
 from time import sleep
+
+from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
+from PySiddhi.core.SiddhiManager import SiddhiManager
+from PySiddhi.core.util.EventPrinter import PrintEvent
+from PySiddhi.DataTypes.LongType import LongType
+
+from evaluation_plan import StatementParser
+from siddhi_connection import SiddhiActiveMQNode
 
 
 # Add listener to capture output events
@@ -12,7 +15,8 @@ class QueryCallbackImpl(QueryCallback):
         PrintEvent(timestamp, inEvents, outEvents)
 
 
-def test_siddhin():
+def test_siddhi():
+    print("test_siddhi Manager")
     siddhiManager = SiddhiManager()
 
     # Siddhi Query to filter events with volume less than 150 as output
@@ -41,6 +45,23 @@ def test_siddhin():
     inputHandler.send(["WSO2", 45.6, LongType(50)])
 
     # Wait for response
-    sleep(5)
+    sleep(1)
 
     siddhiManager.shutdown()
+
+
+def test_node_siddhi():
+    """
+    Run this test with 'pytest -vv -s' to see the output from the process
+    """
+
+    statement = "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5}"
+    parser = StatementParser(statement=statement)
+    statement = parser.parse()
+
+    node_5 = SiddhiActiveMQNode(
+        id_=99,
+        statements=[statement],
+    )
+
+    node_5.start()
