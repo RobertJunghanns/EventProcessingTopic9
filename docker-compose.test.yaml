@@ -1,0 +1,27 @@
+version: "3.8"
+services:
+  test:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - ACTIVEMQ_HOST=activemqtest
+      - ACTIVEMQ_PORT=61613
+    depends_on:
+      activemqtest:
+        condition: service_healthy
+    command: ["pytest", "tests/", "-s", "-vv"]
+
+  activemqtest:
+    image: islandora/activemq:main
+    container_name: activemqtest
+    environment:
+      - ACTIVEMQ_NAME=activemqtest
+      - ACTIVEMQ_USER=admin
+      - ACTIVEMQ_PASSWORD=admin
+    ports:
+      - 8161:8161
+    healthcheck:
+      test: ["CMD", "sleep", "1"]
+      interval: 5s
+      retries: 0

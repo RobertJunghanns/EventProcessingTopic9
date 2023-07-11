@@ -1,2 +1,2 @@
 pytest==7.*
-stomp.py==8.1.* 
+stomp.py==8.1.*

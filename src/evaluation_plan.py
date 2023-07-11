@@ -1,8 +1,7 @@
 import hashlib
 import re
-from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import Any, List, Union
 
 
 class ValueEnum(Enum):
@@ -31,6 +30,22 @@ class AtomicEventType(ValueEnum):
     def topic(self):
         return self.value
 
+    def to_siddhi_query(
+        self,
+        input_stream="cseEventStream",
+        output_stream="outputStream",
+        attribute="symbol",
+    ):
+        return (
+            f"@info(name = '{self.topic}') "
+            f"from {input_stream}[{attribute} == '{self.value}']  "
+            f"select {attribute} "
+            f"insert into {output_stream}; "
+        )
+
+    def __str__(self) -> str:
+        return self.value
+
 
 class Operator(ValueEnum):
     AND = "AND"
@@ -38,6 +53,7 @@ class Operator(ValueEnum):
 
 
 class NodeEnum(Enum):
+    ZERO = 0
     ONE = 1
     TWO = 2
     THREE = 3
@@ -49,14 +65,19 @@ class NodeEnum(Enum):
     NINE = 9
 
 
-@dataclass
 class Statement:
-    nodes: "list[NodeEnum]"
-    query: "Query"
-    inputs: "list[AtomicEventType | Query]"
+    def __init__(
+        self,
+        nodes: "List[NodeEnum]",
+        query: "Query",
+        inputs: "List[Union[AtomicEventType,Query]]",
+    ) -> None:
+        self.nodes = nodes
+        self.query = query
+        self.inputs = inputs
 
     @property
-    def input_topics(self) -> "list[str]":
+    def input_topics(self) -> List[str]:
         return sorted([input_.topic for input_ in self.inputs])
 
     def __eq__(self, other) -> bool:
@@ -68,16 +89,41 @@ class Statement:
             and self.input_topics == other.input_topics
         )
 
+    def __repr__(self) -> str:
+        return (
+            f"Statement(nodes={self.nodes}, query={self.query}, inputs={self.inputs})"
+        )
 
-@dataclass
+
 class Query:
-    operator: Operator
-    operands: "list[AtomicEventType | Query]"
+    def __init__(
+        self, operator: Operator, operands: "List[Union[AtomicEventType, Query]]"
+    ) -> None:
+        self.operator = operator
+        self.operands = operands
 
     @property
     def topic(self) -> str:
+        return str(self)
+
+    @property
+    def hash_topic(self) -> str:
         hash_md5 = hashlib.md5(str(self).encode("UTF-8"))
         return hash_md5.hexdigest().strip()
+
+    def to_siddhi_query(
+        self,
+        input_stream="cseEventStream",
+        output_stream="outputStream",
+        attribute="symbol",
+    ):
+        # TODO: Implement proper Siddhi query generation for AND and SEQ here
+        return (
+            f"@info(name = '{self.topic}') "
+            f"from {input_stream}[{attribute} == '{self.topic}']  "
+            f"select {attribute} "
+            f"insert into {output_stream}; "
+        )
 
     @classmethod
     def from_string(cls, text: str) -> "Query":
@@ -118,12 +164,12 @@ class Query:
         return cls(operator, operands)
 
     @staticmethod
-    def match_operator(text) -> "re.Match | None":
+    def match_operator(text):
         valid_operators = "|".join([operator.value for operator in Operator])
         return re.match(rf"({valid_operators})\((.*)\)", text)
 
     @staticmethod
-    def parse_operands(operands: str) -> "list[AtomicEventType | Query]":
+    def parse_operands(operands: str) -> "List[Union[AtomicEventType, Query]]":
         return [
             Query.parse_operand(operand) for operand in Query.split_operands(operands)
         ]
@@ -184,7 +230,7 @@ class Query:
         return results
 
     @staticmethod
-    def parse_operand(operand: str) -> "AtomicEventType | Query":
+    def parse_operand(operand: str) -> "Union[AtomicEventType, Query]":
         try:
             # Operand is a Query
             Operator.from_string(operand)
@@ -193,10 +239,22 @@ class Query:
             # Operand is an AtomicEventType
             return AtomicEventType.from_string(operand)
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Query):
+            return False
 
-@dataclass
+        return self.operator == other.operator and self.operands == other.operands
+
+    def __repr__(self) -> str:
+        return f"Query(operator={self.operator}, operands={self.operands})"
+
+    def __str__(self) -> str:
+        return f"{self.operator.value}({', '.join([str(operand) for operand in self.operands])})"
+
+
 class StatementParser:
-    statement: str
+    def __init__(self, statement: str) -> None:
+        self.statement = statement
 
     def parse(self) -> Statement:
         """

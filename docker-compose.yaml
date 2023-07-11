@@ -1,7 +1,39 @@
 version: "3.8"
 services:
-  main:
+  eventproducer:
     build:
       context: .
       dockerfile: ./Dockerfile
-    command: python main.py
+    environment:
+      - ACTIVEMQ_HOST=activemq
+      - ACTIVEMQ_PORT=61613
+    depends_on:
+      activemq:
+        condition: service_healthy
+    command: ["python3", "atomicEventProducer.py"]
+
+  eventlistener:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - ACTIVEMQ_HOST=activemq
+      - ACTIVEMQ_PORT=61613
+    depends_on:
+      activemq:
+        condition: service_healthy
+    command: ["python3", "atomicEventListener.py"]
+
+  activemq:
+    image: islandora/activemq:main
+    container_name: activemq
+    environment:
+      - ACTIVEMQ_NAME=activemq
+      - ACTIVEMQ_USER=admin
+      - ACTIVEMQ_PASSWORD=admin
+    ports:
+      - 8161:8161
+    healthcheck:
+      test: ["CMD", "sleep", "1"]
+      interval: 5s
+      retries: 0

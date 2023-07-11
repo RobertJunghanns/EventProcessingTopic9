@@ -1,69 +1,55 @@
-import time
-from dataclasses import dataclass, field
-from enum import Enum
-from multiprocessing import Process, Queue
-from queue import Empty
-from typing import Callable, Optional
+import os
+from typing import Any, List, Optional
 
 import stomp
 
-from evaluation_plan import NodeEnum, Statement
+from evaluation_plan import Statement
+
+ACTIVEMQ_HOST = os.environ.get("ACTIVEMQ_HOST", "localhost")
+ACTIVEMQ_PORT = os.environ.get("ACTIVEMQ_PORT", 61613)
+STATEMENTS = os.environ.get("STATEMENTS", [])
 
 
-class LogListener(stomp.ConnectionListener):
+class LogListenerActiveMQ(stomp.ConnectionListener):
     def on_error(self, message):
-        print('received an error "%s"' % message)
+        print('LogListener received an error "%s"' % message)
 
     def on_message(self, message):
-        print('received a message "%s"' % message)
+        print('LogListener received a message "%s"' % message)
 
 
-class ExceptionListener(stomp.ConnectionListener):
-    def on_error(self, message):
-        raise Exception('received an error "%s"' % message)
-
-    def on_message(self, message):
-        raise Exception('received a message "%s"' % message)
-
-
-def make_connection(listener=LogListener()):
-    hosts = [("localhost", 61613)]
+def make_connection(listener: Any = LogListenerActiveMQ()):
+    hosts = [(ACTIVEMQ_HOST, ACTIVEMQ_PORT)]
     conn = stomp.Connection(host_and_ports=hosts)
     conn.set_listener("", listener)
     conn.connect("admin", "admin", wait=True)
     return conn
 
 
-class CTRLMessageType(Enum):
-    START = "start"
-    STOP = "stop"
-    ADD_STATEMENT = "add_statement"
-    REMOVE_STATEMENT = "remove_statement"
-
-
-@dataclass
-class CTRLMessage:
-    type: CTRLMessageType
-    payload: Statement | None = None
-
-
-class ActiveMQNode(Process):
+class ActiveMQNode(stomp.ConnectionListener):
     def __init__(
         self,
         id_: int,
-        queue: Queue,
-        connection_factory: Callable = make_connection,
-        statements: Optional[list[Statement]] = None,
-        **kwargs,
+        statements: Optional[List[Statement]] = None,
     ):
-        self.id: int = int(id_)
-        self.queue: Queue = queue
-        self.activemq_connection_factory: Callable = connection_factory
-        self.activemq_connection: stomp.Connection = None  # don't initialize here!
-        self.statements: list[Statement] = statements or []
-        self.running: bool = True
+        super().__init__()
 
-        super().__init__(**kwargs)
+        self.id: int = int(id_)
+        self.activemq_connection: stomp.Connection = make_connection(listener=self)
+        self.statements: list[Statement] = statements or []
+
+    def start(self):
+        self.subscribe_to_topics()
+
+    def stop(self):
+        self.unsubscribe_from_topics()
+        self.disconnect()
+
+    def on_message(self, message):
+        print(f"ActiveMQNodeListener - Received message {message}")
+
+    def on_error(self, error):
+        print(f"ActiveMQNodeListener - Received error {error}")
 
     @property
     def topic_subscriptions(self):
@@ -85,68 +71,14 @@ class ActiveMQNode(Process):
 
     def unsubscribe(self, topic):
         subscription_id = f"sub-{self.id}-{topic}"
-        # self.activemq_connection.unsubscribe(id=subscription_id)
+        self.activemq_connection.unsubscribe(id=subscription_id)
 
     def subscribe_to_topics(self, ack="auto"):
         for topic in self.topic_subscriptions:
             self.subscribe(topic, ack=ack)
 
-    def advertise(self, topic):
-        self.activemq_connection.send(body="", destination=topic)
-
-    def advertise_topics(self):
-        for topic in self.topic_advertisements:
-            self.activemq_connection.send(body="", destination=topic)
-
-    def evaluate_statement(self, statement):
-        # Siddhi implementation goes here
-
-        time.sleep(0.001)
-        print(f"Node {self.id} is working on statement {statement}...")
-
-    def evaluate_statements(self):
-        # we may be able to do something smarter with Siddhi here
-        # like registering the queries to be evaluated just once and then
-        # leave it to Siddhi to evaluate them in a loop
-        for statement in self.statements:
-            self.evaluate_statement(statement)
-
-    def get_control_message(self, timeout=0.01):
-        try:
-            return self.queue.get(timeout=timeout)
-        except Empty:
-            return None
-
-    def handle_control_message(self, message):
-        match message.type:
-            case CTRLMessageType.START:
-                self.running = True
-
-            case CTRLMessageType.STOP:
-                self.running = False
-                self.close()
-
-            case CTRLMessageType.ADD_STATEMENT:
-                self.add_statement(message.payload)
-
-            case CTRLMessageType.REMOVE_STATEMENT:
-                self.remove_statement(message.payload)
-
-            case _:
-                raise ValueError(f"Unknown message type: {message.type}")
-
-    def add_statement(self, statement: Statement):
-        self.statements.append(statement)
-
-        for topic in statement.input_topics:
-            self.subscribe(topic)
-
-        self.advertise(statement.query.topic)
-
-    def remove_statement(self, statement: Statement):
-        self.statements.remove(statement)
-
-        for topic in statement.input_topics:
+    def unsubscribe_from_topics(self):
+        for topic in self.topic_subscriptions:
             self.unsubscribe(topic)
 
     def send(self, message, topic):
@@ -154,20 +86,6 @@ class ActiveMQNode(Process):
 
     def disconnect(self):
         self.activemq_connection.disconnect()
-
-    def run(self):
-        # Set up connection to ActiveMQ,
-        # we can not do this in __init__ because the connection is not serializable
-        self.activemq_connection = self.activemq_connection_factory()
-
-        # Set up subscription to input topics
-        self.subscribe_to_topics()
-        self.advertise_topics()
-
-        while self.running:
-            if control_message := self.get_control_message(timeout=0.01):
-                self.handle_control_message(control_message)
-            self.evaluate_statements()
 
     def __str__(self):
         return f"Connection(id='{self.id}', activemq_connection={self.activemq_connection}, statements='{self.statements}')"
@@ -180,78 +98,3 @@ class ActiveMQNode(Process):
 
     def __hash__(self) -> int:
         return self.id
-
-
-@dataclass
-class NodeManager:
-    _nodes: dict[int, ActiveMQNode] = field(default_factory=dict)
-
-    @property
-    def nodes(self):
-        return list(self._nodes.values())
-
-    def add_node(self, node: ActiveMQNode):
-        self._nodes[node.id] = node
-
-    def remove_node(self, node: ActiveMQNode):
-        node.queue.put(CTRLMessage(type=CTRLMessageType.STOP))
-        self._nodes.pop(node.id, None)
-
-    def get_node_by_id(self, node_id: int | NodeEnum):
-        if isinstance(node_id, NodeEnum):
-            node_id = node_id.value
-
-        return self._nodes.get(node_id, None)
-
-    def start_node(self, node: int | NodeEnum | ActiveMQNode):
-        queue = Queue()
-
-        if isinstance(node, NodeEnum):
-            node = ActiveMQNode(id_=node.value, queue=queue)
-
-        if isinstance(node, int):
-            node = ActiveMQNode(id_=node, queue=queue)
-
-        self.add_node(node)
-        node.start()
-
-    def stop_node(
-        self,
-        node_id: int | NodeEnum | None = None,
-        node: ActiveMQNode | None = None,
-    ):
-        assert (
-            node_id is not None or node is not None
-        ), "Either node_id or node must be provided"
-
-        if node_id is not None:
-            node = self.get_node_by_id(node_id)
-
-        if node is None:
-            raise ValueError(f"Node with id {node_id} not found")
-
-        node.queue.put(CTRLMessage(type=CTRLMessageType.STOP))
-        node.join()
-
-    def send_statement_to_node(
-        self,
-        statement: Statement,
-        node_id: int | NodeEnum | None = None,
-        node: ActiveMQNode | None = None,
-    ):
-        assert (
-            node_id is not None or node is not None
-        ), "Either node_id or node must be provided"
-
-        if node_id is not None:
-            node = self.get_node_by_id(node_id)
-
-        if node is None:
-            raise ValueError(f"Node with id {node_id} not found")
-
-        node.queue.put(
-            CTRLMessage(
-                type=CTRLMessageType.ADD_STATEMENT,
-                payload=statement,
-            )
-        )
