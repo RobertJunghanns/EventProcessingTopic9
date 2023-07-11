@@ -3,14 +3,13 @@
 ## Prerequisites
 
 - Docker
-- pytest
-- activeMQ (https://activemq.apache.org/getting-started)
-
-Start the activeMQ broker with `activemq start` (daemon) or `activemq console`
+- docker-compose
 
 ## Run the App
 
-`docker-compose up --build`
+I recommend to not try and run this locally, PySiddhi is a absolute nightmare!
+
+`make config` and then `make run`
 
 ## Tests
 
