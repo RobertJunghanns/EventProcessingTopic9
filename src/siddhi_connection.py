@@ -15,7 +15,7 @@ NODE_ID = os.environ.get("NODE_ID", None)
 
 class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
     # Capture outputstream of Siddhi query and forward to ActiveMQ
-    def __init__(self, *args, activeMQNode, **kwargs):
+    def __init__(self, *args, activeMQNode: ActiveMQNode, **kwargs):
         super().__init__(*args, **kwargs)
         self.activeMQNode = activeMQNode
 
@@ -27,8 +27,11 @@ class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
                 print(f"Received empty event from Siddhi query {event}")
                 continue
 
+            print(
+                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_data} back to ActiveMQ"
+            )
             # event_data == topic, for now we only send empty messages
-            self.activeMQNode.send_message(event_data, topic=f"/topic/{event_data}")
+            self.activeMQNode.send(event_data, topic=f"/topic/{event_data}")
 
 
 class SiddhiActiveMQNode(ActiveMQNode):
@@ -72,6 +75,7 @@ class SiddhiActiveMQNode(ActiveMQNode):
         )
 
         app_string = f"{input_stream_def} {queries_def}"
+        print(f"Initializing Siddhi runtime with app string: {app_string}")
 
         self.siddhi_runtime = self.siddhi_manager.createSiddhiAppRuntime(app_string)
 
@@ -84,7 +88,7 @@ class SiddhiActiveMQNode(ActiveMQNode):
         self.siddhi_runtime.start()
 
     def on_message(self, message):
-        print(f"SiddhiActiveMQNode - Received message {message}")
+        print(f"SiddhiActiveMQNode - Received message {message.body}")
 
         message_topic = message.headers["destination"].replace("/topic/", "")
         print(

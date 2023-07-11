@@ -45,5 +45,7 @@ def register_and_start_atomic_event_producers():
 
 
 if __name__ == "__main__":
-    time.sleep(10)  # wait for ActiveMQ to start
+    print("Waiting for ActiveMQ to start")
+    time.sleep(10)
+
     register_and_start_atomic_event_producers()
