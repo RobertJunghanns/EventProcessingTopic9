@@ -1,17 +1,20 @@
 import csv
 import time
+from pathlib import Path
 
 from connection import ActiveMQNode
 
+file_root = Path(__file__).parent
+
 
 class AtomicEventProducer(ActiveMQNode):
-    fileNameAEvents = "data/atomicEvents_A_timestamps.csv"
-    fileNameBEvents = "data/atomicEvents_B_timestamps.csv"
-    fileNameCEvents = "data/atomicEvents_C_timestamps.csv"
-    fileNameDEvents = "data/atomicEvents_D_timestamps.csv"
-    fileNameEEvents = "data/atomicEvents_E_timestamps.csv"
-    fileNameFEvents = "data/atomicEvents_F_timestamps.csv"
-    fileNameJEvents = "data/atomicEvents_J_timestamps.csv"
+    fileNameAEvents = str(file_root / "data/atomicEvents_A_timestamps.csv")
+    fileNameBEvents = str(file_root / "data/atomicEvents_B_timestamps.csv")
+    fileNameCEvents = str(file_root / "data/atomicEvents_C_timestamps.csv")
+    fileNameDEvents = str(file_root / "data/atomicEvents_D_timestamps.csv")
+    fileNameEEvents = str(file_root / "data/atomicEvents_E_timestamps.csv")
+    fileNameFEvents = str(file_root / "data/atomicEvents_F_timestamps.csv")
+    fileNameJEvents = str(file_root / "data/atomicEvents_J_timestamps.csv")
 
     def __init__(self, *args, eventIntervalsFileName, eventTimestamps=None, **kwargs):
         super().__init__(*args, **kwargs)

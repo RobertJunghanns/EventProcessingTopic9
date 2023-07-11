@@ -12,3 +12,8 @@ config:
 run:
 	@echo "Running..."
 	@docker-compose -f docker-compose.statements.yaml up --build
+
+.PHONY: generate-event-files
+generate-event-files:
+	@echo "Running Event File Generator..."
+	@python src/eventIntervalGenerator.py
