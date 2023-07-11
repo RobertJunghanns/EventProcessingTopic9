@@ -30,6 +30,22 @@ class AtomicEventType(ValueEnum):
     def topic(self):
         return self.value
 
+    def to_siddhi_query(
+        self,
+        input_stream="cseEventStream",
+        output_stream="outputStream",
+        attribute="symbol",
+    ):
+        return (
+            f"@info(name = '{self.topic}') "
+            f"from {input_stream}[{attribute} == '{self.value}']  "
+            f"select {attribute} "
+            f"insert into {output_stream}; "
+        )
+
+    def __str__(self) -> str:
+        return self.value
+
 
 class Operator(ValueEnum):
     AND = "AND"
@@ -59,7 +75,6 @@ class Statement:
         self.nodes = nodes
         self.query = query
         self.inputs = inputs
-        pass
 
     @property
     def input_topics(self) -> List[str]:
@@ -89,8 +104,26 @@ class Query:
 
     @property
     def topic(self) -> str:
+        return str(self)
+
+    @property
+    def hash_topic(self) -> str:
         hash_md5 = hashlib.md5(str(self).encode("UTF-8"))
         return hash_md5.hexdigest().strip()
+
+    def to_siddhi_query(
+        self,
+        input_stream="cseEventStream",
+        output_stream="outputStream",
+        attribute="symbol",
+    ):
+        # TODO: Implement proper Siddhi query generation for AND and SEQ here
+        return (
+            f"@info(name = '{self.topic}') "
+            f"from {input_stream}[{attribute} == '{self.topic}']  "
+            f"select {attribute} "
+            f"insert into {output_stream}; "
+        )
 
     @classmethod
     def from_string(cls, text: str) -> "Query":
@@ -214,6 +247,9 @@ class Query:
 
     def __repr__(self) -> str:
         return f"Query(operator={self.operator}, operands={self.operands})"
+
+    def __str__(self) -> str:
+        return f"{self.operator.value}({', '.join([str(operand) for operand in self.operands])})"
 
 
 class StatementParser:

@@ -5,13 +5,13 @@ from connection import ActiveMQNode
 
 
 class AtomicEventProducer(ActiveMQNode):
-    fileNameAEvents = "atomicEvents_A_timestamps.csv"
-    fileNameBEvents = "atomicEvents_B_timestamps.csv"
-    fileNameCEvents = "atomicEvents_C_timestamps.csv"
-    fileNameDEvents = "atomicEvents_D_timestamps.csv"
-    fileNameEEvents = "atomicEvents_E_timestamps.csv"
-    fileNameFEvents = "atomicEvents_F_timestamps.csv"
-    fileNameJEvents = "atomicEvents_J_timestamps.csv"
+    fileNameAEvents = "data/atomicEvents_A_timestamps.csv"
+    fileNameBEvents = "data/atomicEvents_B_timestamps.csv"
+    fileNameCEvents = "data/atomicEvents_C_timestamps.csv"
+    fileNameDEvents = "data/atomicEvents_D_timestamps.csv"
+    fileNameEEvents = "data/atomicEvents_E_timestamps.csv"
+    fileNameFEvents = "data/atomicEvents_F_timestamps.csv"
+    fileNameJEvents = "data/atomicEvents_J_timestamps.csv"
 
     def __init__(self, *args, eventIntervalsFileName, eventTimestamps=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -30,6 +30,7 @@ class AtomicEventProducer(ActiveMQNode):
         for currentEvent in self.eventTimestamps:
             timeDifferenceToCurrentEvent = int(currentEvent[0]) - int(previousEvent[0])
             time.sleep(timeDifferenceToCurrentEvent / 1000)
+            print(f"AtomicEventProducer sending event:  {currentEvent[1]}")
             self.send(currentEvent[1], topic=f"/topic/{currentEvent[1]}")
             previousEvent = currentEvent
 
@@ -37,7 +38,14 @@ class AtomicEventProducer(ActiveMQNode):
 def register_and_start_atomic_event_producers():
     atomic_event_producer = AtomicEventProducer(
         id_=0,
-        eventIntervalsFileName="combinedEventTimestamps.csv",
+        eventIntervalsFileName="data/combinedEventTimestamps.csv",
     )
     print("nodes created. Start pushing atomic events now")
     atomic_event_producer.pushEvents()
+
+
+if __name__ == "__main__":
+    print("Waiting for ActiveMQ to start")
+    time.sleep(10)
+
+    register_and_start_atomic_event_producers()
