@@ -15,7 +15,8 @@ if __name__ == "__main__":
     ]
 
     statement = Statement(query=None, inputs=atomic_events, nodes=None)
-
+    print("Waiting for ActiveMQ to start")
+    time.sleep(20)
     ActiveMQNode(id_=0, statements=[statement]).start()  # handles subscription
 
     time.sleep(3600)

@@ -117,13 +117,62 @@ class Query:
         output_stream="outputStream",
         attribute="symbol",
     ):
+        
         # TODO: Implement proper Siddhi query generation for AND and SEQ here
-        return (
-            f"@info(name = '{self.topic}') "
-            f"from {input_stream}[{attribute} == '{self.topic}']  "
-            f"select {attribute} "
-            f"insert into {output_stream}; "
-        )
+        #SEQ
+            
+            if self.operator.value == "SEQ":
+                from_every_string = "from every "
+                for i, operand in enumerate(self.operands):
+                    from_every_string+= "e{}".format(i + 1)
+                    from_every_string+= f"={input_stream}[{attribute} == '{operand}']"
+                    if not(i == len(self.operands) - 1):
+                        from_every_string+= ", "
+
+                    
+                rueckgabe = f"""
+                @info(name = '{self.topic}')
+                {from_every_string}
+                select '{self.topic}' as symbol 
+                insert into {output_stream};
+                """
+                #print("TEST SEQ RUECKGABE: ", rueckgabe)
+                return rueckgabe
+            elif self.operator.value == "AND":
+                return (
+                    f"@info(name = '{self.topic}') "
+                    f"from {input_stream}[{attribute} == '{self.topic}']  "
+                    f"select {attribute} "
+                    f"insert into {output_stream}; "
+                )
+
+    # from every e1 = cseEventStream[symbol == operand1], e2 = cseEventStream[symbol == operand2]
+    # from every e1=RegulatorStream[isOn == true],
+
+    # SELECT SEQ(A, F, C) FROM A, F, C ON {0}
+    # SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
+    # SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}
+    # SELECT SEQ(J, A) FROM J, A ON {4}
+    # SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
+    # SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}
+
+    def compute_query_from_statement(self, query, input_stream_def):
+        siddhi_query = input_stream_def
+        if query.operator.value == "AND":
+            self.compute_and_statement_from_query(query)
+        if query.operator.value == "SEQ":
+            self.compute_seq_statement_from_query(query)
+
+        print('Computed Siddhi query: {}'.format(siddhi_query))
+
+    def compute_and_statement_from_query(self, query):
+        print('Computing AND statement')
+        print(query)
+
+    def compute_seq_statement_from_query(self, query):
+        print('Computing SEQ statement')
+        siddhi_statement = 'partition with (symbol of StockRateStream)'
+        print(query)
 
     @classmethod
     def from_string(cls, text: str) -> "Query":

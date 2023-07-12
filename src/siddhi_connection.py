@@ -5,7 +5,7 @@ from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
 from PySiddhi.core.SiddhiManager import SiddhiManager
 
 from connection import ActiveMQNode, make_connection
-from evaluation_plan import StatementParser
+from evaluation_plan import StatementParser, Query
 
 ACTIVEMQ_HOST = os.environ.get("ACTIVEMQ_HOST", "localhost")
 ACTIVEMQ_PORT = os.environ.get("ACTIVEMQ_PORT", 61613)
@@ -21,7 +21,9 @@ class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
 
     def receive(self, timestamp, inEvents, outEvents):
         for event in inEvents:
-            event_data = event.data[0] if event.data else None
+            event_data = None
+            if hasattr(event, 'data'):
+                event_data = event.data[0]
 
             if not event_data:
                 print(f"Received empty event from Siddhi query {event}")
@@ -62,7 +64,6 @@ class SiddhiActiveMQNode(ActiveMQNode):
         attribute="symbol",
     ):
         input_stream_def = f"define stream {input_stream} ({attribute} string); "
-
         queries_def = " ".join(
             [
                 statement.query.to_siddhi_query(
@@ -76,6 +77,7 @@ class SiddhiActiveMQNode(ActiveMQNode):
 
         app_string = f"{input_stream_def} {queries_def}"
         print(f"Initializing Siddhi runtime with app string: {app_string}")
+        
 
         self.siddhi_runtime = self.siddhi_manager.createSiddhiAppRuntime(app_string)
 
@@ -108,6 +110,9 @@ if __name__ == "__main__":
     statements = [
         StatementParser(statement).parse() for statement in STATEMENTS.split("|")
     ]
+
+    print("Waiting for ActiveMQ to start")
+    time.sleep(20)
 
     siddhi_activeMQ_node = SiddhiActiveMQNode(
         id_=NODE_ID,
