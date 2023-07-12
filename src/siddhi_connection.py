@@ -21,19 +21,17 @@ class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
 
     def receive(self, timestamp, inEvents, outEvents):
         for event in inEvents:
-            event_data = None
-            if hasattr(event, 'data'):
-                event_data = event.data[0]
+            event_data = event.getData()
 
             if not event_data:
                 print(f"Received empty event from Siddhi query {event}")
                 continue
 
             print(
-                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_data} back to ActiveMQ"
+                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_data[0]} back to ActiveMQ"
             )
             # event_data == topic, for now we only send empty messages
-            self.activeMQNode.send(event_data, topic=f"/topic/{event_data}")
+            self.activeMQNode.send(event_data[0], topic=f"/topic/{event_data[0]}")
 
 
 class SiddhiActiveMQNode(ActiveMQNode):
@@ -76,7 +74,7 @@ class SiddhiActiveMQNode(ActiveMQNode):
         )
 
         app_string = f"{input_stream_def} {queries_def}"
-        print(f"Initializing Siddhi runtime with app string: {app_string}")
+        #print(f"Initializing Siddhi runtime with app string: {app_string}")
         
 
         self.siddhi_runtime = self.siddhi_manager.createSiddhiAppRuntime(app_string)
@@ -91,11 +89,7 @@ class SiddhiActiveMQNode(ActiveMQNode):
 
     def on_message(self, message):
         print(f"SiddhiActiveMQNode - Received message {message.body}")
-
-        message_topic = message.headers["destination"].replace("/topic/", "")
-        print(
-            f"Attempting to forward message '{message_topic}' from ActiveMQ to Siddhi"
-        )
+        message_topic = message.body
 
         if self.siddhi_runtime:
             self.siddhi_runtime.getInputHandler("cseEventStream").send([message_topic])

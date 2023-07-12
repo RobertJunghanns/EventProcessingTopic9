@@ -2,6 +2,7 @@ import hashlib
 import re
 from enum import Enum
 from typing import Any, List, Union
+from itertools import permutations
 
 
 class ValueEnum(Enum):
@@ -136,18 +137,33 @@ class Query:
                 select '{self.topic}' as symbol 
                 insert into {output_stream};
                 """
-                #print("TEST SEQ RUECKGABE: ", rueckgabe)
                 return rueckgabe
+            
             elif self.operator.value == "AND":
-                return (
-                    f"@info(name = '{self.topic}') "
-                    f"from {input_stream}[{attribute} == '{self.topic}']  "
-                    f"select {attribute} "
-                    f"insert into {output_stream}; "
-                )
+                print(self.operands)
+                event_permutations = list(permutations(self.operands, len(self.operands)))
+                from_string = "from every "
+                for i, permutation in enumerate(event_permutations):
+                    for j, operand in enumerate(permutation):
+                        from_string+= "e{}".format(j + 1)
+                        from_string+= f"={input_stream}[{attribute} == '{operand}']"
+                        if not(j == len(self.operands) - 1):
+                            from_string+= ", "
 
-    # from every e1 = cseEventStream[symbol == operand1], e2 = cseEventStream[symbol == operand2]
-    # from every e1=RegulatorStream[isOn == true],
+                    if not(i == len(event_permutations) - 1):
+                        from_string+= " or "
+                    
+                rueckgabe = f"""
+                @info(name = '{self.topic}')
+                {from_string}
+                select '{self.topic}' as symbol 
+                insert into {output_stream};
+                """
+                print(rueckgabe)
+                return rueckgabe
+
+
+
 
     # SELECT SEQ(A, F, C) FROM A, F, C ON {0}
     # SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
