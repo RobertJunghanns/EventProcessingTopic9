@@ -3,7 +3,7 @@ from typing import Any, List, Optional
 
 import stomp
 
-from evaluation_plan import Statement
+from evaluation_plan import Statement, make_safe_topic_name
 
 ACTIVEMQ_HOST = os.environ.get("ACTIVEMQ_HOST", "localhost")
 ACTIVEMQ_PORT = os.environ.get("ACTIVEMQ_PORT", 61613)
@@ -54,19 +54,22 @@ class ActiveMQNode(stomp.ConnectionListener):
     @property
     def topic_subscriptions(self):
         return [
-            f"/topic/{topic}"
+            f"/topic/{make_safe_topic_name(topic)}"
             for statement in self.statements
             for topic in statement.input_topics
         ]
 
     @property
     def topic_advertisements(self):
-        return [f"/topic/{statement.query.topic}" for statement in self.statements]
+        return [
+            f"/topic/{make_safe_topic_name(statement.query.topic)}"
+            for statement in self.statements
+        ]
 
     def subscribe(self, topic, ack="auto"):
         subscription_id = f"sub-{self.id}-{topic}"
         self.activemq_connection.subscribe(
-            destination=topic, id=subscription_id, ack=ack
+            destination=make_safe_topic_name(topic), id=subscription_id, ack=ack
         )
 
     def unsubscribe(self, topic):
