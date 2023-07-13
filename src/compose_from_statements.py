@@ -12,6 +12,7 @@ NODE_BASE = """
       - ACTIVEMQ_PORT=61613
       - STATEMENTS={statements}
       - NODE_ID={node_id}
+      - SLEEP=100
     depends_on:
       activemq:
         condition: service_healthy

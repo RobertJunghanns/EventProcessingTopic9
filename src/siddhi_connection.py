@@ -5,12 +5,13 @@ from PySiddhi.core.query.output.callback.QueryCallback import QueryCallback
 from PySiddhi.core.SiddhiManager import SiddhiManager
 
 from connection import ActiveMQNode, make_connection
-from evaluation_plan import StatementParser, Query
+from evaluation_plan import Query, StatementParser, make_safe_topic_name
 
 ACTIVEMQ_HOST = os.environ.get("ACTIVEMQ_HOST", "localhost")
-ACTIVEMQ_PORT = os.environ.get("ACTIVEMQ_PORT", 61613)
+ACTIVEMQ_PORT = int(os.environ.get("ACTIVEMQ_PORT", 61613))
 STATEMENTS = os.environ.get("STATEMENTS", "")
 NODE_ID = os.environ.get("NODE_ID", None)
+SLEEP = float(os.environ.get("SLEEP", 20))
 
 
 class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
@@ -27,11 +28,14 @@ class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
                 print(f"Received empty event from Siddhi query {event}")
                 continue
 
+            # event_data is the same as the topic in our case
+            event_topic = event_data[0]
+            event_topic_mq = make_safe_topic_name(event_topic)
             print(
-                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_data[0]} back to ActiveMQ"
+                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_topic} back to ActiveMQ (translated to '/topic/{event_topic_mq}')"
             )
-            # event_data == topic, for now we only send empty messages
-            self.activeMQNode.send(event_data[0], topic=f"/topic/{event_data[0]}")
+
+            self.activeMQNode.send(event_topic, topic=f"/topic/{event_topic_mq}")
 
 
 class SiddhiActiveMQNode(ActiveMQNode):
@@ -74,8 +78,7 @@ class SiddhiActiveMQNode(ActiveMQNode):
         )
 
         app_string = f"{input_stream_def} {queries_def}"
-        #print(f"Initializing Siddhi runtime with app string: {app_string}")
-        
+        # print(f"Initializing Siddhi runtime with app string: {app_string}")
 
         self.siddhi_runtime = self.siddhi_manager.createSiddhiAppRuntime(app_string)
 
@@ -90,8 +93,9 @@ class SiddhiActiveMQNode(ActiveMQNode):
     def on_message(self, message):
         print(f"SiddhiActiveMQNode - Received message {message.body}")
         message_topic = message.body
-        
+
         if self.siddhi_runtime:
+            # siddhi seems to be able to handle the special characters in the topic name
             self.siddhi_runtime.getInputHandler("cseEventStream").send([message_topic])
         else:
             print("Siddhi runtime not initialized, skipping message forwarding...")
@@ -106,7 +110,7 @@ if __name__ == "__main__":
     ]
 
     print("Waiting for ActiveMQ to start")
-    time.sleep(20)
+    time.sleep(SLEEP)
 
     siddhi_activeMQ_node = SiddhiActiveMQNode(
         id_=NODE_ID,

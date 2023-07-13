@@ -1,6 +1,5 @@
 version: "3.8"
-services: 
-
+services:
   node_2:
     build:
       context: .
@@ -10,6 +9,7 @@ services:
       - ACTIVEMQ_PORT=61613
       - STATEMENTS=SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}|SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
       - NODE_ID=2
+      - SLEEP=100
     depends_on:
       activemq:
         condition: service_healthy
@@ -29,7 +29,6 @@ services:
       interval: 5s
       retries: 0
 
-
   eventproducer:
     build:
       context: .
@@ -37,6 +36,7 @@ services:
     environment:
       - ACTIVEMQ_HOST=activemq
       - ACTIVEMQ_PORT=61613
+      - SLEEP=100
     depends_on:
       activemq:
         condition: service_healthy

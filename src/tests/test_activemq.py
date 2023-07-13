@@ -172,5 +172,4 @@ def test_activemq_with_statement(capsys):
 
     assert "Hello from Node 5" in captured
     assert "Hello from Node 9" in captured
-
-
+    assert "'destination': '/topic/AND(E-SEQ(C-J-A))'" in captured
