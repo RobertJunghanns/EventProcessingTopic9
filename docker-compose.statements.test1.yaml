@@ -8,7 +8,7 @@ services:
     environment:
       - ACTIVEMQ_HOST=activemq
       - ACTIVEMQ_PORT=61613
-      - STATEMENTS=SELECT SEQ(J, A) FROM J, A ON {4}|SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}|SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
+      - STATEMENTS=SELECT SEQ(J, A) FROM J, A ON {4}|SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}|SELECT AND(B, AND(C, E, D, F)) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
       - NODE_ID=4
     depends_on:
       activemq:
@@ -22,7 +22,7 @@ services:
     environment:
       - ACTIVEMQ_HOST=activemq
       - ACTIVEMQ_PORT=61613
-      - STATEMENTS=SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}|SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
+      - STATEMENTS=SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}|SELECT AND(E, SEQ(C, J, A)) FROM E, SEQ(C, J, A) ON {5, 9}
       - NODE_ID=9
     depends_on:
       activemq:

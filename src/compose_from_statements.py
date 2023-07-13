@@ -47,8 +47,6 @@ ATOMIC_PRODUCER = """
         condition: service_healthy
     command: ["python3", "atomicEventProducer.py"]
 """
-
-
 STATEMENTS = [
     "SELECT SEQ(A, F, C) FROM A, F, C ON {0}",
     "SELECT SEQ(J, A) FROM J, A ON {4}",
@@ -56,6 +54,16 @@ STATEMENTS = [
     "SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}",
     "SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}",
     "SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}",
+]
+
+STATEMENTS = [
+    "SELECT SEQ(A, F, C) FROM A, F, C ON {0}",
+    "SELECT SEQ(J, A) FROM J, A ON {4}",
+    "SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}",
+    "SELECT AND(B, AND(C, E, D, F)) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}",
+    "SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}",
+    "SELECT AND(E, SEQ(C, J, A)) FROM E, SEQ(C, J, A) ON {5, 9}",
+    "SELECT SEQ(C, J, A) FROM C, J, A ON {10}", #Helper Node
 ]
 
 if __name__ == "__main__":
