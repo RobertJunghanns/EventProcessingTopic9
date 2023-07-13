@@ -41,7 +41,7 @@ class AtomicEventProducer(ActiveMQNode):
 def register_and_start_atomic_event_producers():
     atomic_event_producer = AtomicEventProducer(
         id_=0,
-        eventIntervalsFileName="data/combinedEventTimestampsTest.csv",
+        eventIntervalsFileName="data/combinedEventTimestampsTest1.csv",
     )
     print("nodes created. Start pushing atomic events now")
     atomic_event_producer.pushEvents()
@@ -49,6 +49,6 @@ def register_and_start_atomic_event_producers():
 
 if __name__ == "__main__":
     print("Waiting for ActiveMQ to start")
-    time.sleep(160)
+    time.sleep(100)
 
     register_and_start_atomic_event_producers()
