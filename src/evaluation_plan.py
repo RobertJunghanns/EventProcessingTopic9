@@ -130,9 +130,6 @@ class Query:
         output_stream="outputStream",
         attribute="symbol",
     ):
-        # TODO: Implement proper Siddhi query generation for AND and SEQ here
-        # SEQ
-
         if self.operator.value == "SEQ":
             from_every_string = "from every "
             for i, operand in enumerate(self.operands):
@@ -150,25 +147,25 @@ class Query:
             print(rueckgabe)
             return rueckgabe
 
-        elif self.topic == "AND(E, SEQ(J, A))":
-            rueckgabe = f"""
-                @info(name = '{self.topic}')
-                from every(e1={input_stream}) -> e2={input_stream}[(e1.symbol == 'E' and e2.symbol == 'SEQ(J, A)') or (e1.symbol == 'SEQ(J, A)' and e2.symbol == 'E')]
-                select '{self.topic}' as symbol 
-                insert into {output_stream};
-                """
-            # rueckgabe = f"""
-            # @info(name = '{self.topic}')
-            # from every e1={input_stream}[e1.symbol == 'E'] -> e2={input_stream}[e2.symbol == 'SEQ(J, A)']
-            # select '{self.topic}' as symbol
-            # insert into {output_stream};
+            # elif self.topic == "AND(E, SEQ(J, A))":
+            #     rueckgabe = f"""
+            #     @info(name = '{self.topic}')
+            #     from every(e1={input_stream}) -> e2={input_stream}[(e1.symbol == 'E' and e2.symbol == 'SEQ(J, A)') or (e1.symbol == 'SEQ(J, A)' and e2.symbol == 'E')]
+            #     select '{self.topic}' as symbol
+            #     insert into {output_stream};
+            #     """
+            #     # rueckgabe = f"""
+            #     # @info(name = '{self.topic}')
+            #     # from every e1={input_stream}[e1.symbol == 'E'] -> e2={input_stream}[e2.symbol == 'SEQ(J, A)']
+            #     # select '{self.topic}' as symbol
+            #     # insert into {output_stream};
 
-            # from every e1={input_stream}[e1.symbol == 'SEQ(J, A)'] -> e2={input_stream}[e2.symbol == 'E']
-            # select '{self.topic}' as symbol
-            # insert into {output_stream};
-            # """
-            print(rueckgabe)
-            return rueckgabe
+            #     # from every e1={input_stream}[e1.symbol == 'SEQ(J, A)'] -> e2={input_stream}[e2.symbol == 'E']
+            #     # select '{self.topic}' as symbol
+            #     # insert into {output_stream};
+            #     # """
+            #     print(rueckgabe)
+            #     return rueckgabe
 
         elif self.operator.value == "AND":
             print(self.operands)
@@ -177,10 +174,6 @@ class Query:
                 """
 
             event_permutations = list(permutations(self.operands, len(self.operands)))
-
-            # from every e1={input_stream}[e1.symbol == 'SEQ(J, A)'] -> e2={input_stream}[e2.symbol == 'E']
-            # select '{self.topic}' as symbol
-            # insert into {output_stream};
 
             for i, permutation in enumerate(event_permutations):
                 rueckgabe += "from every "
@@ -196,13 +189,6 @@ class Query:
 
             print("--------Rückgabe", rueckgabe)
             return rueckgabe
-
-    # SELECT SEQ(A, F, C) FROM A, F, C ON {0}
-    # SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
-    # SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}
-    # SELECT SEQ(J, A) FROM J, A ON {4}
-    # SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
-    # SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}
 
     def compute_query_from_statement(self, query, input_stream_def):
         siddhi_query = input_stream_def
@@ -409,3 +395,10 @@ class StatementParser:
         nodes = [NodeEnum(int(node)) for node in match.group(3).split(",")]
 
         return Statement(query=query, inputs=inputs, nodes=nodes)
+
+
+if __name__ == "__main__":
+    parsed_Statement = StatementParser(
+        "SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}"
+    ).parse()
+    print(parsed_Statement)
