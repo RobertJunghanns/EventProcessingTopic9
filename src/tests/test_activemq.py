@@ -14,6 +14,7 @@ from evaluation_plan import (
     Query,
     Statement,
     StatementParser,
+    make_safe_topic_name,
 )
 
 
@@ -153,7 +154,7 @@ def test_activemq_with_statement(capsys):
     parser = StatementParser(statement=statement)
     statement = parser.parse()
 
-    topic = f"/topic/{statement.query.topic}"  # currently this is a hash
+    topic = f"/topic/{make_safe_topic_name(statement.query.topic)}"
 
     # Set up subscription to query topic
     conn = make_connection()

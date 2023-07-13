@@ -1,6 +1,7 @@
 import hashlib
 import re
 from enum import Enum
+from functools import total_ordering
 from itertools import permutations
 from typing import Any, List, Union
 
@@ -30,6 +31,7 @@ class ValueEnum(Enum):
         raise ValueError(f"Unknown AtomicEventType: {text}")
 
 
+@total_ordering
 class AtomicEventType(ValueEnum):
     A = "A"
     B = "B"
@@ -58,6 +60,9 @@ class AtomicEventType(ValueEnum):
 
     def __str__(self) -> str:
         return self.value
+
+    def __lt__(self, other):
+        return str(self) < str(other)
 
 
 class Operator(ValueEnum):
@@ -91,7 +96,18 @@ class Statement:
 
     @property
     def input_topics(self) -> List[str]:
-        return sorted([input_.topic for input_ in self.inputs])
+        return [input_.topic for input_ in self.inputs]
+
+    def to_string(self):
+        node_ids = []
+
+        for node in self.nodes:
+            try:
+                node_ids.append(node.value)
+            except AttributeError:
+                node_ids.append(int(node))
+
+        return f"SELECT {self.query} FROM {', '.join(self.input_topics)} ON {{{', '.join([str(node_id) for node_id in node_ids])}}}"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Statement):
@@ -108,6 +124,7 @@ class Statement:
         )
 
 
+@total_ordering
 class Query:
     def __init__(
         self, operator: Operator, operands: "List[Union[AtomicEventType, Query]]"
@@ -326,7 +343,12 @@ class Query:
         if not isinstance(other, Query):
             return False
 
-        return self.operator == other.operator and self.operands == other.operands
+        return self.operator == other.operator and sorted(self.operands) == sorted(
+            other.operands
+        )
+
+    def __lt__(self, other):
+        return str(self) < str(other)
 
     def __repr__(self) -> str:
         return f"Query(operator={self.operator}, operands={self.operands})"
