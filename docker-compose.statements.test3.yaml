@@ -1,14 +1,29 @@
 version: "3.8"
 services:
-  node_2:
+  node_5:
     build:
       context: .
       dockerfile: ./Dockerfile
     environment:
       - ACTIVEMQ_HOST=activemq
       - ACTIVEMQ_PORT=61613
-      - STATEMENTS=SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}|SELECT AND(B, AND(C, E, D, F)) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
-      - NODE_ID=2
+      - STATEMENTS=SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}|SELECT AND(E, SEQ(C, J, A)) FROM E, SEQ(C, J, A) ON {5, 9}
+      - NODE_ID=5
+      - SLEEP=50
+    depends_on:
+      activemq:
+        condition: service_healthy
+    command: ["python3", "siddhi_connection.py"]
+
+  node_10:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - ACTIVEMQ_HOST=activemq
+      - ACTIVEMQ_PORT=61613
+      - STATEMENTS=SELECT SEQ(C, J, A) FROM C, J, A ON {10}
+      - NODE_ID=10
       - SLEEP=50
     depends_on:
       activemq:
@@ -40,4 +55,4 @@ services:
     depends_on:
       activemq:
         condition: service_healthy
-    command: ["python3", "atomicEventProducerTest2.py"]
+    command: ["python3", "atomicEventProducerTest3.py"]

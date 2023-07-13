@@ -23,6 +23,11 @@ statement-test-2:
 	@echo "Running statement test 2..."
 	@docker-compose -f docker-compose.statements.test2.yaml up --build
 
+.PHONY: statement-test-3
+statement-test-3:
+	@echo "Running statement test 3..."
+	@docker-compose -f docker-compose.statements.test3.yaml up --build
+
 .PHONY: generate-event-files
 generate-event-files:
 	@echo "Running Event File Generator..."

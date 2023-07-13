@@ -76,6 +76,7 @@ class NodeEnum(Enum):
     SEVEN = 7
     EIGHT = 8
     NINE = 9
+    TEN = 10
 
 
 class Statement:
@@ -117,7 +118,7 @@ class Query:
 
     @property
     def topic(self) -> str:
-        return make_safe_topic_name(str(self))
+        return str(self)
 
     @property
     def hash_topic(self) -> str:
