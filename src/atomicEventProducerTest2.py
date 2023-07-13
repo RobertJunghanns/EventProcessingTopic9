@@ -1,10 +1,12 @@
 import csv
+import os
 import time
 from pathlib import Path
 
 from connection import ActiveMQNode
 
 file_root = Path(__file__).parent
+SLEEP = float(os.environ.get("SLEEP", 20))
 
 
 class AtomicEventProducer(ActiveMQNode):
@@ -49,6 +51,6 @@ def register_and_start_atomic_event_producers():
 
 if __name__ == "__main__":
     print("Waiting for ActiveMQ to start")
-    time.sleep(100)
+    time.sleep(SLEEP)
 
     register_and_start_atomic_event_producers()

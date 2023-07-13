@@ -1,6 +1,5 @@
 version: "3.8"
-services: 
-
+services:
   node_4:
     build:
       context: .
@@ -10,6 +9,7 @@ services:
       - ACTIVEMQ_PORT=61613
       - STATEMENTS=SELECT SEQ(J, A) FROM J, A ON {4}|SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}|SELECT AND(B, AND(C, E, D, F)) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
       - NODE_ID=4
+      - SLEEP=100
     depends_on:
       activemq:
         condition: service_healthy
@@ -24,11 +24,11 @@ services:
       - ACTIVEMQ_PORT=61613
       - STATEMENTS=SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}|SELECT AND(E, SEQ(C, J, A)) FROM E, SEQ(C, J, A) ON {5, 9}
       - NODE_ID=9
+      - SLEEP=100
     depends_on:
       activemq:
         condition: service_healthy
     command: ["python3", "siddhi_connection.py"]
-
 
   activemq:
     image: islandora/activemq:main
@@ -44,7 +44,6 @@ services:
       interval: 5s
       retries: 0
 
-
   eventproducer:
     build:
       context: .
@@ -52,6 +51,7 @@ services:
     environment:
       - ACTIVEMQ_HOST=activemq
       - ACTIVEMQ_PORT=61613
+      - SLEEP=100
     depends_on:
       activemq:
         condition: service_healthy

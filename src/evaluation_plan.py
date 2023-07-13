@@ -1,8 +1,20 @@
 import hashlib
 import re
 from enum import Enum
-from typing import Any, List, Union
 from itertools import permutations
+from typing import Any, List, Union
+
+
+def make_safe_topic_name(topic: str) -> str:
+    def make_valid(char):
+        if char.isalnum() or char in ("(", ")", "-"):
+            return char
+        return "-"
+
+    escaped = "".join([make_valid(char) for char in topic])
+    escaped_clean = re.sub("-+", "-", escaped)
+
+    return escaped_clean
 
 
 class ValueEnum(Enum):
@@ -105,7 +117,7 @@ class Query:
 
     @property
     def topic(self) -> str:
-        return str(self)
+        return make_safe_topic_name(str(self))
 
     @property
     def hash_topic(self) -> str:
@@ -118,67 +130,65 @@ class Query:
         output_stream="outputStream",
         attribute="symbol",
     ):
-            
-            if self.operator.value == "SEQ":
-                from_every_string = "from every "
-                for i, operand in enumerate(self.operands):
-                    from_every_string+= "e{}".format(i + 1)
-                    from_every_string+= f"={input_stream}[{attribute} == '{operand}']"
-                    if not(i == len(self.operands) - 1):
-                        from_every_string+= "-> "
+        if self.operator.value == "SEQ":
+            from_every_string = "from every "
+            for i, operand in enumerate(self.operands):
+                from_every_string += "e{}".format(i + 1)
+                from_every_string += f"={input_stream}[{attribute} == '{operand}']"
+                if not (i == len(self.operands) - 1):
+                    from_every_string += "-> "
 
-                    
-                rueckgabe = f"""
+            rueckgabe = f"""
                 @info(name = '{self.topic}')
                 {from_every_string}
                 select '{self.topic}' as symbol 
                 insert into {output_stream};
                 """
-                print(rueckgabe)
-                return rueckgabe
-            
+            print(rueckgabe)
+            return rueckgabe
+
             # elif self.topic == "AND(E, SEQ(J, A))":
             #     rueckgabe = f"""
             #     @info(name = '{self.topic}')
             #     from every(e1={input_stream}) -> e2={input_stream}[(e1.symbol == 'E' and e2.symbol == 'SEQ(J, A)') or (e1.symbol == 'SEQ(J, A)' and e2.symbol == 'E')]
-            #     select '{self.topic}' as symbol 
+            #     select '{self.topic}' as symbol
             #     insert into {output_stream};
             #     """
             #     # rueckgabe = f"""
             #     # @info(name = '{self.topic}')
             #     # from every e1={input_stream}[e1.symbol == 'E'] -> e2={input_stream}[e2.symbol == 'SEQ(J, A)']
-            #     # select '{self.topic}' as symbol 
+            #     # select '{self.topic}' as symbol
             #     # insert into {output_stream};
 
             #     # from every e1={input_stream}[e1.symbol == 'SEQ(J, A)'] -> e2={input_stream}[e2.symbol == 'E']
-            #     # select '{self.topic}' as symbol 
+            #     # select '{self.topic}' as symbol
             #     # insert into {output_stream};
             #     # """
             #     print(rueckgabe)
             #     return rueckgabe
-            
-            elif self.operator.value == "AND":
-                print(self.operands)
-                rueckgabe = f"""
+
+        elif self.operator.value == "AND":
+            print(self.operands)
+            rueckgabe = f"""
                 @info(name = '{self.topic}')
                 """
 
-                event_permutations = list(permutations(self.operands, len(self.operands)))
-                
-                for i, permutation in enumerate(event_permutations):
-                    rueckgabe += "from every "
-                    for j, operand in enumerate(permutation):
-                        rueckgabe+= f"e{j+1}={input_stream}[{attribute} == '{operand}']"
-                        if not(j == len(self.operands) - 1):
-                            rueckgabe+= "-> "
-                    rueckgabe += f"""
+            event_permutations = list(permutations(self.operands, len(self.operands)))
+
+            for i, permutation in enumerate(event_permutations):
+                rueckgabe += "from every "
+                for j, operand in enumerate(permutation):
+                    rueckgabe += f"e{j+1}={input_stream}[{attribute} == '{operand}']"
+                    if not (j == len(self.operands) - 1):
+                        rueckgabe += "-> "
+                rueckgabe += f"""
                 select '{self.topic}' as symbol 
                 insert into {output_stream};
 
                 """
 
-                print("--------Rückgabe", rueckgabe)
-                return rueckgabe
+            print("--------Rückgabe", rueckgabe)
+            return rueckgabe
 
     def compute_query_from_statement(self, query, input_stream_def):
         siddhi_query = input_stream_def
@@ -187,15 +197,15 @@ class Query:
         if query.operator.value == "SEQ":
             self.compute_seq_statement_from_query(query)
 
-        print('Computed Siddhi query: {}'.format(siddhi_query))
+        print("Computed Siddhi query: {}".format(siddhi_query))
 
     def compute_and_statement_from_query(self, query):
-        print('Computing AND statement')
+        print("Computing AND statement")
         print(query)
 
     def compute_seq_statement_from_query(self, query):
-        print('Computing SEQ statement')
-        siddhi_statement = 'partition with (symbol of StockRateStream)'
+        print("Computing SEQ statement")
+        siddhi_statement = "partition with (symbol of StockRateStream)"
         print(query)
 
     @classmethod
@@ -385,7 +395,10 @@ class StatementParser:
         nodes = [NodeEnum(int(node)) for node in match.group(3).split(",")]
 
         return Statement(query=query, inputs=inputs, nodes=nodes)
-    
+
+
 if __name__ == "__main__":
-    parsed_Statement = StatementParser("SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}").parse()
+    parsed_Statement = StatementParser(
+        "SELECT AND(E, SEQ(J, A)) FROM E, SEQ(J, A) ON {9}"
+    ).parse()
     print(parsed_Statement)
