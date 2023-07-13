@@ -9,7 +9,7 @@ services:
       - ACTIVEMQ_PORT=61613
       - STATEMENTS=SELECT AND(C, E, D, F) FROM C, E, D, F ON {2, 4}|SELECT AND(B, AND(C, E, D, F)) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}
       - NODE_ID=2
-      - SLEEP=100
+      - SLEEP=50
     depends_on:
       activemq:
         condition: service_healthy

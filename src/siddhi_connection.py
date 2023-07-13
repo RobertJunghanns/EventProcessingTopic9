@@ -30,12 +30,12 @@ class SiddhiQueryOutputCallbackActiveMQ(QueryCallback):
 
             # event_data is the same as the topic in our case
             event_topic = event_data[0]
-            event_topic_mq = make_safe_topic_name(event_topic)
+            #event_topic_mq = make_safe_topic_name(event_topic)
             print(
-                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_topic} back to ActiveMQ (translated to '/topic/{event_topic_mq}')"
+                f"SiddhiQueryOutputCallbackActiveMQ - sending message {event_topic} back to ActiveMQ (translated to '/topic/{event_topic}')"
             )
 
-            self.activeMQNode.send(event_topic, topic=f"/topic/{event_topic_mq}")
+            self.activeMQNode.send(event_topic, topic=f"/topic/{event_topic}")
 
 
 class SiddhiActiveMQNode(ActiveMQNode):

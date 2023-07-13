@@ -117,7 +117,7 @@ class Query:
 
     @property
     def topic(self) -> str:
-        return make_safe_topic_name(str(self))
+        return str(self)
 
     @property
     def hash_topic(self) -> str:
