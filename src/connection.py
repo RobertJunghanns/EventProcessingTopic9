@@ -75,6 +75,7 @@ class ActiveMQNode(stomp.ConnectionListener):
 
     def subscribe_to_topics(self, ack="auto"):
         for topic in self.topic_subscriptions:
+            print("------------------Node ",self.id, " subscribes Topic: ", topic)
             self.subscribe(topic, ack=ack)
 
     def unsubscribe_from_topics(self):

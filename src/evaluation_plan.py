@@ -137,6 +137,17 @@ class Query:
                 select '{self.topic}' as symbol 
                 insert into {output_stream};
                 """
+                print(rueckgabe)
+                return rueckgabe
+            
+            elif self.topic == "AND(E, SEQ(J, A))":
+                rueckgabe = f"""
+                @info(name = '{self.topic}')
+                from every(e1={input_stream}) -> e2={input_stream}[(e1.symbol == 'E' and e1.symbol == 'SEQ(J, A))') or (e1.symbol == 'SEQ(J, A))' and e1.symbol == 'E')]
+                select '{self.topic}' as symbol 
+                insert into {output_stream}; \n
+                """
+                print(rueckgabe)
                 return rueckgabe
             
             elif self.operator.value == "AND":
@@ -159,7 +170,7 @@ class Query:
                 select '{self.topic}' as symbol 
                 insert into {output_stream};
                 """
-                print(rueckgabe)
+                #print(rueckgabe)
                 return rueckgabe
 
 

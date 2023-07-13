@@ -90,7 +90,10 @@ class SiddhiActiveMQNode(ActiveMQNode):
     def on_message(self, message):
         print(f"SiddhiActiveMQNode - Received message {message.body}")
         message_topic = message.body
-
+        print('-----------------------------------------')
+        print(message_topic)
+        print('-----------------------------------------')
+        
         if self.siddhi_runtime:
             self.siddhi_runtime.getInputHandler("cseEventStream").send([message_topic])
         else:
