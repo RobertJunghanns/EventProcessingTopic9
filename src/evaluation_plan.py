@@ -128,7 +128,7 @@ class Query:
                     from_every_string+= "e{}".format(i + 1)
                     from_every_string+= f"={input_stream}[{attribute} == '{operand}']"
                     if not(i == len(self.operands) - 1):
-                        from_every_string+= ", "
+                        from_every_string+= "-> "
 
                     
                 rueckgabe = f"""
@@ -143,34 +143,48 @@ class Query:
             elif self.topic == "AND(E, SEQ(J, A))":
                 rueckgabe = f"""
                 @info(name = '{self.topic}')
-                from every(e1={input_stream}) -> e2={input_stream}[(e1.symbol == 'E' and e1.symbol == 'SEQ(J, A))') or (e1.symbol == 'SEQ(J, A))' and e1.symbol == 'E')]
+                from every(e1={input_stream}) -> e2={input_stream}[(e1.symbol == 'E' and e2.symbol == 'SEQ(J, A)') or (e1.symbol == 'SEQ(J, A)' and e2.symbol == 'E')]
                 select '{self.topic}' as symbol 
-                insert into {output_stream}; \n
+                insert into {output_stream};
                 """
+                # rueckgabe = f"""
+                # @info(name = '{self.topic}')
+                # from every e1={input_stream}[e1.symbol == 'E'] -> e2={input_stream}[e2.symbol == 'SEQ(J, A)']
+                # select '{self.topic}' as symbol 
+                # insert into {output_stream};
+
+                # from every e1={input_stream}[e1.symbol == 'SEQ(J, A)'] -> e2={input_stream}[e2.symbol == 'E']
+                # select '{self.topic}' as symbol 
+                # insert into {output_stream};
+                # """
                 print(rueckgabe)
                 return rueckgabe
             
             elif self.operator.value == "AND":
                 print(self.operands)
-                event_permutations = list(permutations(self.operands, len(self.operands)))
-                from_string = "from every "
-                for i, permutation in enumerate(event_permutations):
-                    for j, operand in enumerate(permutation):
-                        from_string+= "e{}".format(j + 1)
-                        from_string+= f"={input_stream}[{attribute} == '{operand}']"
-                        if not(j == len(self.operands) - 1):
-                            from_string+= ", "
-
-                    if not(i == len(event_permutations) - 1):
-                        from_string+= " or "
-                    
                 rueckgabe = f"""
                 @info(name = '{self.topic}')
-                {from_string}
+                """
+
+                event_permutations = list(permutations(self.operands, len(self.operands)))
+
+                # from every e1={input_stream}[e1.symbol == 'SEQ(J, A)'] -> e2={input_stream}[e2.symbol == 'E']
+                # select '{self.topic}' as symbol 
+                # insert into {output_stream};
+                
+                for i, permutation in enumerate(event_permutations):
+                    rueckgabe += "from every "
+                    for j, operand in enumerate(permutation):
+                        rueckgabe+= f"e{j+1}={input_stream}[{attribute} == '{operand}']"
+                        if not(j == len(self.operands) - 1):
+                            rueckgabe+= "-> "
+                    rueckgabe += f"""
                 select '{self.topic}' as symbol 
                 insert into {output_stream};
+
                 """
-                #print(rueckgabe)
+
+                print("--------Rückgabe", rueckgabe)
                 return rueckgabe
 
 
