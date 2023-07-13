@@ -112,7 +112,3 @@ def test_dep_optimizer():
     optimized = dep_optimizer(STATEMENTS) or []
 
     assert sorted([op.to_string() for op in optimized]) == sorted(OPTIMIZED_STATEMENTS)
-
-
-SELECT AND(E, SEQ(C, J, A)) FROM E, SEQ(C, J, A) ON {5, 9}
-SELECT AND(E, SEQ(C, J, A)) FROM AND(E, SEQ(J, A)), C ON {5, 9}
