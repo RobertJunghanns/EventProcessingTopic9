@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  node_5:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - ACTIVEMQ_HOST=activemq
+      - ACTIVEMQ_PORT=61613
+      - STATEMENTS=SELECT AND(C, E, B, D, F) FROM B, AND(C, E, D, F) ON {0, 1, 2, 3, 4, 5}|SELECT AND(E, SEQ(C, J, A)) FROM E, SEQ(C, J, A) ON {5, 9}
+      - NODE_ID=5
+      - SLEEP=50
+    depends_on:
+      activemq:
+        condition: service_healthy
+    command: ["python3", "siddhi_connection.py"]
+
+  node_10:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - ACTIVEMQ_HOST=activemq
+      - ACTIVEMQ_PORT=61613
+      - STATEMENTS=SELECT SEQ(C, J, A) FROM C, J, A ON {10}
+      - NODE_ID=10
+      - SLEEP=50
+    depends_on:
+      activemq:
+        condition: service_healthy
+    command: ["python3", "siddhi_connection.py"]
+
+  activemq:
+    image: islandora/activemq:main
+    container_name: activemq
+    environment:
+      - ACTIVEMQ_NAME=activemq
+      - ACTIVEMQ_USER=admin
+      - ACTIVEMQ_PASSWORD=admin
+    ports:
+      - 8161:8161
+    healthcheck:
+      test: ["CMD", "sleep", "1"]
+      interval: 5s
+      retries: 0
+
+  eventproducer:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    environment:
+      - ACTIVEMQ_HOST=activemq
+      - ACTIVEMQ_PORT=61613
+      - SLEEP=100
+    depends_on:
+      activemq:
+        condition: service_healthy
+    command: ["python3", "atomicEventProducerTest3.py"]
